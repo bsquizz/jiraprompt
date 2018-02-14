@@ -1,0 +1,8 @@
+
+auth:
+  basic_auth: false
+  kerberos: true
+  password: null
+  username: null
+board_id: 1651
+url: https://projects.engineering.redhat.com

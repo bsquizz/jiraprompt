@@ -1,0 +1,9 @@
+jira>=1.0.10
+pyyaml
+prompter
+python-editor
+attrs
+prettytable
+cmd2
+iso8601
+six
