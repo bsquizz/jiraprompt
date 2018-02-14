@@ -1,13 +1,13 @@
 import copy
-from datetime import datetime
 from inspect import isclass, isfunction
 
 import attr
-import iso8601
 import yaml
 from attr.validators import optional, instance_of
 from jira.resources import Resource, Issue, Worklog
 from prettytable import PrettyTable
+
+from .common import iso_to_ctime_str, friendly_worklog_time, iso_to_datetime
 
 
 @attr.s
@@ -130,35 +130,6 @@ class PrintableTable(object):
     def select(self, number):
         return self.entries[number - 1]
 
-
-def friendly_worklog_time(seconds):
-    """
-    https://stackoverflow.com/questions/775049/how-to-convert-seconds-to-hours-minutes-and-seconds
-
-    :param seconds:
-    :return:
-    """
-    if not seconds:
-        string = "0m"
-    else:
-        m, s = divmod(int(seconds), 60)
-        h, m = divmod(m, 60)
-        string = ""
-        string += "{}h".format(h) if h else ""
-        string += "{}m".format(m) if m else ""
-    return string
-
-
-def iso_to_friendly(string):
-    datetime_object = iso8601.parse_date(string)
-    return datetime_object.strftime('%c')
-
-
-def friendly_to_iso(datetime_string):
-    datetime_object = datetime.strptime(datetime_string, '%c')
-    return datetime_object.isoformat()
-
-
 def create_issue_table(issue_list):
     def row_builder(issue):
         f = issue.fields
@@ -216,7 +187,7 @@ def create_worklog_table(worklog_list):
     def row_builder(wl):
         # Truncate comment if too long
         comment = wl.comment[:79] + "..." if len(wl.comment) > 80 else wl.comment
-        row = [friendly_worklog_time(wl.timeSpentSeconds), iso_to_friendly(wl.started), comment]
+        row = [friendly_worklog_time(wl.timeSpentSeconds), iso_to_ctime_str(wl.started), comment]
         return row
 
     def totals_row_builder(wl_list):
@@ -231,5 +202,5 @@ def create_worklog_table(worklog_list):
         row_builder=row_builder,
         updater=None,
         totals_row_builder=totals_row_builder,
-        sorter=lambda worklog: iso8601.parse_date(worklog.started)
+        sorter=lambda worklog: iso_to_datetime(worklog.started)
     )

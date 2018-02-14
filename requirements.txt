@@ -8,3 +8,4 @@ cmd2
 iso8601
 six
 pykerberos
+dateutil

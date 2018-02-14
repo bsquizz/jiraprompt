@@ -3,8 +3,6 @@ from __future__ import print_function
 import argparse
 
 import cmd2
-import six
-import yaml
 
 from .common import editor_ignore_comments, sanitize_worklog_time
 from .tables import create_issue_table, create_worklog_table
@@ -54,7 +52,7 @@ class Prompt(cmd2.Cmd):
     @cmd2.with_argparser(card_parser)
     def do_card(self, args):
         if not self.issue_table:
-            print("No issue table generated yet. Run an 'ls' first.")
+            print("No issue table generated yet. Run 'ls' or 'search' first.")
             return
         ce = CardEditor(self._jw, self.issue_table.select(args.number))
         if args.cmd:
@@ -93,6 +91,14 @@ class Prompt(cmd2.Cmd):
     def do_edit(self, args):
         """edit card details (opens editor)"""
         print(editor_ignore_comments(self.issue_table.to_yaml()))
+
+    def do_todayswork(self, args):
+        """show all work log entries logged today for a generated issue table"""
+        if not self.issue_table:
+            print("No issue table generated yet. Run 'ls' or 'search' first")
+            return
+        create_worklog_table(
+            self._jw.get_todays_worklogs(self.issue_table.entries)).print_table()
 
 
 class CardEditor(cmd2.Cmd):

@@ -4,6 +4,8 @@ import attr
 import yaml
 from jira import JIRA
 
+from .common import iso_time_is_today
+
 
 class JiraClientOverride(JIRA):
     def _create_kerberos_session(self, *args, **kwargs):
@@ -69,7 +71,7 @@ class JiraWrapper(object):
                 # Disable ssl validation warnings, we gave one warning already ...
                 from urllib3.exceptions import InsecureRequestWarning
                 from requests.packages.urllib3 import disable_warnings
-                disable_warnings(category=InsecureRequestWarning) 
+                disable_warnings(category=InsecureRequestWarning)
 
             self._jira = JiraClientOverride(self.jira_url, **kwargs)
         return self._jira
@@ -97,6 +99,18 @@ class JiraWrapper(object):
 
     def get_worklog(self, issue):
         return self.jira.worklogs(issue.key)
+
+    def get_todays_worklogs(self, issue_list):
+        worklogs = []
+
+        for issue in issue_list:
+            for wl in self.get_worklog(issue):
+                print(wl.created)
+                print(wl.started)
+                if iso_time_is_today(wl.created) or iso_time_is_today(wl.started):
+                    worklogs.append(wl)
+        print(worklogs)
+        return worklogs
 
     @staticmethod
     def edit_remaining_time(issue, time_string):
