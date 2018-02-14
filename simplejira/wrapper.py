@@ -47,7 +47,8 @@ class JiraWrapper(object):
         if not self._jira:
             print("Connecting to jira at", self.jira_url)
             kwargs = {}
-            auth_cfg = self.config['auth']
+            cfg = self.config
+            auth_cfg = cfg['auth']
             try:
                 kwargs['validate'] = auth_cfg['validate']
             except KeyError:
@@ -60,6 +61,15 @@ class JiraWrapper(object):
                 print("Using kerberos authentication")
                 kwargs['kerberos'] = True
                 kwargs['kerberos_options'] = {'mutual_authentication': "DISABLED"}
+
+            kwargs['options'] = {}
+            if 'verify_ssl' in cfg and cfg['verify_ssl'] is False:
+                print("Warning: SSL certificate verification is disabled!")
+                kwargs['options']['verify'] = False
+                # Disable ssl validation warnings, we gave one warning already ...
+                from urllib3.exceptions import InsecureRequestWarning
+                from requests.packages.urllib3 import disable_warnings
+                disable_warnings(category=InsecureRequestWarning) 
 
             self._jira = JiraClientOverride(self.jira_url, **kwargs)
         return self._jira

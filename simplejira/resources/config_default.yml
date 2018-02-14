@@ -6,3 +6,4 @@ auth:
   username: null
 board_id: 1651
 url: https://projects.engineering.redhat.com
+verify_ssl: True
