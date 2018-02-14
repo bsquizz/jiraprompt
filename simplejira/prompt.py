@@ -239,7 +239,7 @@ class CardEditor(BasePrompt):
 
             print("Available statuses:\n\n")
             for status in avail_statuses:
-                print("  {}) {}".format(status['number'], status['friendly_name']))
+                print("  {}) {}".format(status['local_num'], status['friendly_name']))
             while True:
                 new_id = self._jw.get_avail_status_id(
                     avail_statuses,
