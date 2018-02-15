@@ -5,7 +5,7 @@ import argparse
 import cmd2
 
 from .common import editor_ignore_comments, sanitize_worklog_time
-from .tables import create_issue_table, create_worklog_table
+from .collections import issue_collection, worklog_collection
 from .wrapper import JiraWrapper
 
 
@@ -20,7 +20,7 @@ class Prompt(cmd2.Cmd):
             'do_edit',
         ]
 
-        self.issue_table = None
+        self.issue_collection = None
         self._jw = JiraWrapper(config_file=config_file)
         self._jira = self._jw.jira
         print("\nWelcome to simplejira!  We hope you have a BLAST.\n")
@@ -39,8 +39,8 @@ class Prompt(cmd2.Cmd):
     @cmd2.with_argparser(ls_parser)
     def do_ls(self, args):
         issues = self._jw.search_issues(args.user, args.sprint)
-        self.issue_table = create_issue_table(issues)
-        self.issue_table.print_table()
+        self.issue_collection = issue_collection(issues)
+        self.issue_collection.print_table()
 
     # -----------------
     # card
@@ -51,10 +51,10 @@ class Prompt(cmd2.Cmd):
                              help="Command to pass on to card prompt (optional)")
     @cmd2.with_argparser(card_parser)
     def do_card(self, args):
-        if not self.issue_table:
+        if not self.issue_collection:
             print("No issue table generated yet. Run 'ls' or 'search' first.")
             return
-        ce = CardEditor(self._jw, self.issue_table.select(args.number))
+        ce = CardEditor(self._jw, self.issue_collection.select(args.number))
         if args.cmd:
             ce.onecmd(" ".join(args.cmd))
         else:
@@ -90,15 +90,15 @@ class Prompt(cmd2.Cmd):
 
     def do_edit(self, args):
         """edit card details (opens editor)"""
-        print(editor_ignore_comments(self.issue_table.to_yaml()))
+        print(editor_ignore_comments(self.issue_collection.to_yaml()))
 
     def do_todayswork(self, args):
         """show all work log entries logged today for a generated issue table"""
-        if not self.issue_table:
+        if not self.issue_collection:
             print("No issue table generated yet. Run 'ls' or 'search' first")
             return
-        create_worklog_table(
-            self._jw.get_todays_worklogs(self.issue_table.entries)).print_table()
+        worklog_collection(
+            self._jw.get_todays_worklogs(self.issue_collection.entries)).print_table()
 
 
 class CardEditor(cmd2.Cmd):
@@ -124,7 +124,7 @@ class CardEditor(cmd2.Cmd):
         self._jw = jira_wrapper
         self._jira = self._jw.jira
         self.issue = issue
-        self._issue_collection = create_issue_table([issue])
+        self._issue_collection = issue_collection([issue])
 
     def _print_cmds(self):
         # Print all the commands that can be run against a card
@@ -184,12 +184,12 @@ class CardEditor(cmd2.Cmd):
     def do_ls(self, args):
         """re-load this issue from server and show it"""
         self.issue = self._jira.issue(self.issue.key)
-        create_issue_table([self.issue]).print_table(show_totals=False)
+        issue_collection([self.issue]).print_table(show_totals=False)
 
     def do_lswork(self, args):
         """show work log"""
         worklogs = self._jw.get_worklog(self.issue)
-        create_worklog_table(worklogs).print_table()
+        worklog_collection(worklogs).print_table()
 
     status_parser = argparse.ArgumentParser()
     status_parser.add_argument('new_status', const=None, type=str, nargs='*',
@@ -265,6 +265,6 @@ class CardEditor(cmd2.Cmd):
         """edit full work log (opens editor)"""
         #TODO
         worklogs = self._jw.get_worklog(self.issue)
-        collection = create_worklog_table(worklogs)
+        collection = worklog_collection(worklogs)
         print(editor_ignore_comments(collection.to_yaml()))
     '''

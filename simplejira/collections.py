@@ -11,27 +11,37 @@ from .common import iso_to_ctime_str, friendly_worklog_time, iso_to_datetime
 
 
 @attr.s
-class PrintableTable(object):
+class ResourceCollection(object):
     """
-    Represents an ordered set of entries as a table whose rows give details on each entry
+    Represents an ordered set of Jira Resource entries (issues, worklogs, etc.)
+
+    Contains methods that dictate the entries from a field that should be displayed/operated on,
+    how they should be sorted, updated, printed, etc.
+
+    This class uses attrs to instantiate objects, and collections that hold different Resource
+    types are instantiated by methods below this class.
     """
 
+    # defines type of resource in this collection
     entry_type = attr.ib(
-        validator=lambda _, __, value: isclass(value) and isinstance(value, Resource)
-    )
+        validator=lambda _, __, value: isclass(value) and isinstance(value, Resource))
 
+    # defines list of the resource objects
     entries = attr.ib(
         type=list,
-        validator=lambda self, __, value: all(isinstance(v, self.entry_type) for v in value)
-    )
+        validator=lambda self, __, value: all(isinstance(v, self.entry_type) for v in value))
 
-    field_names = attr.ib(type=list)
+    # defines the field names that are displayed for each resource
+    field_names = attr.ib(
+        type=list,
+        validator=lambda _, __, value: all(isinstance(value, basestring) for v in value))
 
+    # defines the fields that should be 'aligned left' when table is printed
     align_left = attr.ib(
         type=list,
-        validator=lambda self, _, value: all(v in self.field_names for v in value)
-    )
+        validator=lambda self, _, value: all(v in self.field_names for v in value))
 
+    # a method which takes an entry from this collection and builds a row (list) for the table
     row_builder = attr.ib()
     @row_builder.validator
     def test_row(self, attribute, value):
@@ -45,8 +55,10 @@ class PrintableTable(object):
                 raise
         return valid
 
+    # a method which takes a list as input (similar to a row) and updates the resource server-side
     updater = attr.ib()
 
+    # optional, a method which takes all entries and totals certain fields to create a 'totals' row
     totals_row_builder = attr.ib(default=None)
     @totals_row_builder.validator
     def test_totaler(self, attribute, value):
@@ -59,21 +71,26 @@ class PrintableTable(object):
             except Exception:
                 print("ERROR: provided totals_row_builder failed validation")
                 raise
-
             valid = True
         return valid
 
+    # a method which becomes the key for sorting this collection's list of resources
     sorter = attr.ib(
         default=None,
-        validator=optional(lambda _, __, value: isfunction(value))
-    )
+        validator=optional(lambda _, __, value: isfunction(value)))
 
+    # these should usually not be passed in by the caller and are populated by @properties below
     _table = attr.ib(default=None, validator=optional(instance_of(PrettyTable)))
     _table_with_totals = attr.ib(default=None, validator=optional(instance_of(PrettyTable)))
 
-
     @property
     def table(self):
+        """
+        Generate a pretty table for the collection
+
+        Uses the row_builder method to create a row and add it to the PrettyTable
+        Also adds an additional column at the front, the "No." column which lists the entry number
+        """
         if not self._table:
             t = PrettyTable()
             t.field_names = ["no."] + self.field_names
@@ -89,6 +106,9 @@ class PrintableTable(object):
 
     @property
     def table_with_totals(self):
+        """
+        Generate a pretty table which has a 'totals' row if a row builder method has been given
+        """
         if self.table:
             if self.totals_row_builder:
                 self._table_with_totals = copy.deepcopy(self.table)
@@ -100,10 +120,16 @@ class PrintableTable(object):
         return self._table_with_totals
 
     def __attrs_post_init__(self):
+        """
+        Sort the collection's entries after init
+        """
         if self.sorter:
             self.entries.sort(key=self.sorter)
 
     def print_table(self, show_totals=True):
+        """
+        Print the table for this collection
+        """
         if show_totals:
             # A hacky way to add the totals row w/ a line divider before it
             table_lines = str(self.table_with_totals).splitlines()
@@ -114,6 +140,9 @@ class PrintableTable(object):
             print(self.table)
 
     def to_yaml(self, specific_entry=None):
+        """
+        Using the field names and row values, convert this collection to YAML
+        """
         if specific_entry:
             entry_data_list = [specific_entry]
         else:
@@ -128,9 +157,12 @@ class PrintableTable(object):
         return yaml.safe_dump(filtered_data_list, default_flow_style=False)
 
     def select(self, number):
+        """
+        Select an entry based on its displayed entry number in the table
+        """
         return self.entries[number - 1]
 
-def create_issue_table(issue_list):
+def issue_collection(issue_list):
     def row_builder(issue):
         f = issue.fields
         # Truncate the summary if too long
@@ -171,7 +203,7 @@ def create_issue_table(issue_list):
         )
         return ["", "", "", "", "", total_timespent, total_timeest]
 
-    return PrintableTable(
+    return ResourceCollection(
         entry_type=Issue,
         entries=issue_list,
         field_names=["key", "summary", "component", "label", "status", "timeSpent", "timeLeft"],
@@ -183,10 +215,10 @@ def create_issue_table(issue_list):
     )
 
 
-def create_worklog_table(worklog_list):
+def worklog_collection(worklog_list):
     def row_builder(wl):
         # Truncate comment if too long
-        comment = wl.comment[:79] + "..." if len(wl.comment) > 80 else wl.comment
+        comment = wl.comment[:87] + "..." if len(wl.comment) > 88 else wl.comment
         row = [friendly_worklog_time(wl.timeSpentSeconds), iso_to_ctime_str(wl.started), comment]
         return row
 
@@ -194,7 +226,7 @@ def create_worklog_table(worklog_list):
         total_timespent = friendly_worklog_time(sum(wl.timeSpentSeconds for wl in wl_list))
         return [total_timespent, "", ""]
 
-    return PrintableTable(
+    return ResourceCollection(
         entry_type=Worklog,
         entries=worklog_list,
         field_names=["timeSpent", "started", "comment"],
