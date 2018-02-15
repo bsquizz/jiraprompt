@@ -144,12 +144,15 @@ class JiraWrapper(object):
             self._current_sprint_id = sorted(active_sprints, key=lambda sprint: sprint.id)[-1].id
         return self._current_sprint_id
 
-    def search_issues(self, sprint=None, assignee=None):
+    def search_issues(self, sprint=None, assignee=None, status=None):
         if not sprint:
             sprint = self.current_sprint_id
         if not assignee:
             assignee = "currentUser()"
-        return self.jira.search_issues('sprint = {} AND assignee = {}'.format(sprint, assignee))
+        search_query = 'sprint = {} AND assignee = {}'.format(sprint, assignee)
+        if status:
+            search_query += ' AND status in ("{}")'.format(status)
+        return self.jira.search_issues(search_query)
 
     def get_my_issues(self):
         return self.search_issues()
