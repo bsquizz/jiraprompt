@@ -48,8 +48,9 @@ class ResourceCollection(object):
         valid = False
         if isfunction(value):
             try:
-                value(self.entries[0])
-                valid = True
+                if self.entries:
+                    value(self.entries[0])
+                    valid = True
             except Exception:
                 print("ERROR: provided row_builder failed to build a row from entry 0")
                 raise

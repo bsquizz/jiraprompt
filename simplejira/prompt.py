@@ -49,9 +49,12 @@ class Prompt(BasePrompt):
     ls_parser.add_argument(
         '-s', '--sprint', type=str, default=None,
         help='Sprint name, sprint number, or "backlog". Default is current sprint.')
+    ls_parser.add_argument(
+        '--status', type=str, default=None,
+        help='Status of the card. e.g. --status "In Progress"')
     @cmd2.with_argparser(ls_parser)
     def do_ls(self, args):
-        issues = self._jw.search_issues(args.user, args.sprint)
+        issues = self._jw.search_issues(args.user, args.sprint, args.status)
         self.issue_collection = issue_collection(issues)
         self.issue_collection.print_table()
 
