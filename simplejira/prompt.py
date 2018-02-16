@@ -3,13 +3,26 @@ from __future__ import print_function
 import argparse
 
 import cmd2
+import prompter
 
 from .common import editor_ignore_comments, sanitize_worklog_time
 from .resource_collections import issue_collection, worklog_collection
 from .wrapper import JiraWrapper
 
 
-class Prompt(cmd2.Cmd):
+class BasePrompt(cmd2.Cmd):
+    def input(self, *args, **kwargs):
+        """
+        Call prompter.prompt but allow for ctrl+c to cancel and return to base prompt
+        """
+        try:
+            return prompter.prompt(*args, **kwargs)
+        except KeyboardInterrupt:
+            print("<cancelled>\n")
+            return self.emptyline()
+
+
+class Prompt(BasePrompt):
     def __init__(self, config_file):
         self.abbrev = True
         cmd2.Cmd.__init__(self, use_ipython=False)
@@ -88,10 +101,16 @@ class Prompt(cmd2.Cmd):
             timeleft=args.timeleft,
         )
 
+    # -----------------
+    # edit
+    # -----------------
     def do_edit(self, args):
         """edit card details (opens editor)"""
         print(editor_ignore_comments(self.issue_collection.to_yaml()))
 
+    # -----------------
+    # todayswork
+    # -----------------
     def do_todayswork(self, args):
         """show all work log entries logged today for a generated issue table"""
         if not self.issue_collection:
@@ -101,7 +120,7 @@ class Prompt(cmd2.Cmd):
             self._jw.get_todays_worklogs(self.issue_collection.entries)).print_table()
 
 
-class CardEditor(cmd2.Cmd):
+class CardEditor(BasePrompt):
     def __init__(self, jira_wrapper, issue):
         self.abbrev = True
         self.cmd_shortcuts = {
@@ -162,6 +181,9 @@ class CardEditor(cmd2.Cmd):
         """return to main prompt"""
         return self.do_quit(args)
 
+    # -----------------
+    # logwork
+    # -----------------
     log_parser = argparse.ArgumentParser()
     log_parser.add_argument('timespent', const=None, nargs='?', help="Time spent, e.g. 2h30m")
     log_parser.add_argument('comment', const=None, nargs='*', help="Comment for the work done")
@@ -169,9 +191,9 @@ class CardEditor(cmd2.Cmd):
     def do_logwork(self, args):
         """log work"""
         if not args.timespent:
-            args.timespent = raw_input("Enter time spent (e.g. 2h30m): ")
+            args.timespent = self.input("Enter time spent (e.g. 2h30m):")
         if not args.comment:
-            args.comment = raw_input("Enter comment: ")
+            args.comment = self.input("Enter comment:")
         else:
             args.comment = " ".join(args.comment)
 
@@ -181,16 +203,25 @@ class CardEditor(cmd2.Cmd):
             comment=args.comment
         )
 
+    # -----------------
+    # ls
+    # -----------------
     def do_ls(self, args):
         """re-load this issue from server and show it"""
         self.issue = self._jira.issue(self.issue.key)
         issue_collection([self.issue]).print_table(show_totals=False)
 
+    # -----------------
+    # lswork
+    # -----------------
     def do_lswork(self, args):
         """show work log"""
         worklogs = self._jw.get_worklog(self.issue)
         worklog_collection(worklogs).print_table()
 
+    # -----------------
+    # status
+    # -----------------
     status_parser = argparse.ArgumentParser()
     status_parser.add_argument('new_status', const=None, type=str, nargs='*',
                                help="Name of new status (e.g. in progress or inprogress)")
@@ -212,13 +243,16 @@ class CardEditor(cmd2.Cmd):
             while True:
                 new_id = self._jw.get_avail_status_id(
                     avail_statuses,
-                    raw_input("Select new status (enter number from above): ")
+                    self.input("Select new status (enter number from above):")
                 )
                 if new_id:
                     break
 
         self._jira.transition_issue(self.issue, new_id)
 
+    # -----------------
+    # component
+    # -----------------
     component_parser = argparse.ArgumentParser()
     component_parser.add_argument('component_name', const=None, type=str, nargs=1)
     @cmd2.with_argparser(component_parser)
@@ -226,24 +260,30 @@ class CardEditor(cmd2.Cmd):
         """set component"""
         name = " ".join(args.component_name)
         if not name:
-            name = raw_input("Enter component name: ")
+            name = self.input("Enter component name:")
 
         self._jw.update_component(issue, name)
 
+    # -----------------
+    # addlabels
+    # -----------------
     label_parser = argparse.ArgumentParser()
     label_parser.add_argument('label_names', const=None, type=str, nargs='*')
     @cmd2.with_argparser(label_parser)
     def do_addlabels(self, args):
         """add label(s)"""
         if not args.label_names:
-            args.label_names = raw_input("Enter label names (separated by space) ").split(' ')
+            args.label_names = self.input("Enter label names (separated by space):").split(' ')
         self._jw.update_labels(self.issue, args.label_names)
 
+    # -----------------
+    # rmlabels
+    # -----------------
     @cmd2.with_argparser(label_parser)
     def do_rmlabels(self, args):
         """remove label(s)"""
         if not args.label_names:
-            args.label_names = raw_input("Enter label names (separated by space) ").split(' ')
+            args.label_names = self.input("Enter label names (separated by space):").split(' ')
         new_labels = [l for l in self.issue.fields.labels if l not in args.label_names]
         self._jw.update_labels(self.issue, new_labels)
 

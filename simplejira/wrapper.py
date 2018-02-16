@@ -60,11 +60,15 @@ class IssueFields(object):
         return self
 
     def labels(self, label_list):
-        self.fields.update({'labels': label_list})
+        self.fields.update({
+            'labels': label_list
+        })
         return self
 
     def summary(self, summary_text):
-        self.fields.update({'summary': summary_text})
+        self.fields.update({
+            'summary': summary_text
+        })
         return self
 
     def assignee(self, name):
@@ -74,6 +78,7 @@ class IssueFields(object):
             }
         })
         return self
+
 
 @attr.s
 class JiraWrapper(object):
