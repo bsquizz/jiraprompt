@@ -4,7 +4,7 @@ import attr
 import yaml
 from jira import JIRA
 
-from .common import iso_time_is_today
+from .common import iso_time_is_today, sanitize_worklog_time
 
 
 class JiraClientOverride(JIRA):
@@ -22,6 +22,58 @@ class JiraClientOverride(JIRA):
         if r.status_code == 200:
             print("Authenticated successfully")
 
+
+class IssueFields(object):
+    """
+    Class which holds builders for various jira field data
+
+    Build multiple field sections and then pass in the entire kwarg without having to remember the
+    json variations.
+    Example:
+
+    f = IssueFields().labels(['something1', 'something2']).component("LOL").summary("my summary")
+    issue.update(**f.kwarg)
+    """
+    def __init__(self):
+        self._base = {'fields': {}}
+        self.fields = self._base['fields']
+
+    @property
+    def kwarg(self):
+        return self._base
+
+    def timetracking(self, remaining, original):
+        self.fields.update({
+            'timetracking': {
+                'remainingEstimate': sanitize_worklog_time(remaining),
+                'originalEstimate': sanitize_worklog_time(original)
+            }
+        })
+        return self
+
+    def component(self, component_name):
+        self.fields.update({
+            'components': [
+                {'name': component_name}
+            ]
+        })
+        return self
+
+    def labels(self, label_list):
+        self.fields.update({'labels': label_list})
+        return self
+
+    def summary(self, summary_text):
+        self.fields.update({'summary': summary_text})
+        return self
+
+    def assignee(self, name):
+        self.fields.update({
+            'assignee': {
+                'name': name
+            }
+        })
+        return self
 
 @attr.s
 class JiraWrapper(object):
@@ -117,15 +169,8 @@ class JiraWrapper(object):
         Keep originalEstimate and only edit remainingEstimate
         We need to pass both of them as not passing originalEstimate zeroes it.
         """
-        t = convert_time_string(str(time_string))
-        issue.update(
-            fields={
-                'timetracking': {
-                    'remainingEstimate': t,
-                    'originalEstimate': issue.fields.timeoriginalestimate
-                }
-            }
-        )
+        f = IssueFields().timetracking(time_string, issue.fields.timeoriginalestimate)
+        issue.update(**f.kwarg)
 
     @staticmethod
     def zero_remaining_time(issue):
@@ -141,12 +186,14 @@ class JiraWrapper(object):
             self.zero_remaining_time(issue)
 
     @staticmethod
+    def update_component(issue, component_name):
+        f = IssueFields().component(component_name)
+        issue.update(**f.kwarg)
+
+    @staticmethod
     def update_labels(issue, labels):
-        issue.update(
-            fields={
-                'labels': label_list
-            }
-        )
+        f = IssueFields().labels(labels)
+        issue.update(**f.kwarg)
 
     @staticmethod
     def normalize_status_name(txt):

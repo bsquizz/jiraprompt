@@ -5,7 +5,7 @@ import argparse
 import cmd2
 
 from .common import editor_ignore_comments, sanitize_worklog_time
-from .collections import issue_collection, worklog_collection
+from .resource_collections import issue_collection, worklog_collection
 from .wrapper import JiraWrapper
 
 
@@ -228,11 +228,7 @@ class CardEditor(cmd2.Cmd):
         if not name:
             name = raw_input("Enter component name: ")
 
-        self.issue.update(
-            fields={
-                'components': [{'name': name}]
-            }
-        )
+        self._jw.update_component(issue, name)
 
     label_parser = argparse.ArgumentParser()
     label_parser.add_argument('label_names', const=None, type=str, nargs='*')
