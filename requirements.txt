@@ -9,3 +9,4 @@ iso8601
 six
 pykerberos
 python.dateutil
+requests
