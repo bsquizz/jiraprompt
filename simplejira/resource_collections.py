@@ -24,26 +24,26 @@ class ResourceCollection(object):
     types are instantiated by methods below this class.
     """
 
-    # defines type of resource in this collection
+    """ defines type of resource in this collection """
     entry_type = attr.ib(
         validator=lambda _, __, value: isclass(value) and isinstance(value, Resource))
 
-    # defines list of the resource objects
+    """ defines list of the resource objects """
     entries = attr.ib(
         type=list,
         validator=lambda self, __, value: all(isinstance(v, self.entry_type) for v in value))
 
-    # defines the field names that are displayed for each resource
+    """ defines the field names that are displayed for each resource """
     field_names = attr.ib(
         type=list,
         validator=lambda _, __, value: all(isinstance(value, basestring) for v in value))
 
-    # defines the fields that should be 'aligned left' when table is printed
+    """ defines the fields that should be 'aligned left' when table is printed """
     align_left = attr.ib(
         type=list,
         validator=lambda self, _, value: all(v in self.field_names for v in value))
 
-    # a method which takes an entry from this collection and builds a row (list) for the table
+    """ method which takes an entry from this collection and builds a row (list) for the table """
     row_builder = attr.ib()
     @row_builder.validator
     def test_row(self, attribute, value):
@@ -58,10 +58,10 @@ class ResourceCollection(object):
                 raise
         return valid
 
-    # a method which takes a list as input (similar to a row) and updates the resource server-side
+    """ method which takes row data as input and updates the resource server-side """
     updater = attr.ib()
 
-    # optional, a method which takes all entries and totals certain fields to create a 'totals' row
+    """ optional, method which takes all entries and totals certain fields """
     totals_row_builder = attr.ib(default=None)
     @totals_row_builder.validator
     def test_totaler(self, attribute, value):
@@ -77,7 +77,7 @@ class ResourceCollection(object):
             valid = True
         return valid
 
-    # a method which becomes the key for sorting this collection's list of resources
+    """ method which becomes the key for sorting this collection's list of resources """
     sorter = attr.ib(
         default=None,
         validator=optional(lambda _, __, value: isfunction(value)))

@@ -2,9 +2,24 @@ import re
 from datetime import datetime
 
 import editor
+import pkg_resources
 import iso8601
 from dateutil import tz
 
+
+class PkgResource(object):
+    ASCII_ART = 'ascii_art.txt'
+    DEFAULT_CONFIG = 'config_default.yml'
+    ISSUE_TEMPLATE = 'issue_template.yml'
+
+    @staticmethod
+    def get_path(path):
+        return pkg_resources.resource_filename(__name__, 'resources/' + path)
+
+    @staticmethod
+    def read(path):
+        with open(PkgResource.get_path(path)) as f:
+            return f.read()
 
 def editor_ignore_comments(default_text):
     """

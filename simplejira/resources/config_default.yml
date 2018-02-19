@@ -1,9 +1,79 @@
+# Default config for the Red Hat CFME-QE team.
 
+# Define auth settings. Username/password only needed if doing basic authentication
 auth:
   basic_auth: false
   kerberos: true
   password: null
   username: null
-board_id: 1651
+
+# Name or ID of agile board
+board: "CloudForms QE Sprints"
+
+# Name, key, or ID of project
+project: "Red Hat CloudForms QE"
+
+# JIRA server base URL
 url: https://projects.engineering.redhat.com
+
+# Whether or not to validate SSL certs when connecting to JIRA
 verify_ssl: True
+
+# Whether or not to check that components have valid labels
+label_check: True
+
+# Map of valid labels for each components
+components_labels_map:
+  infrastructure:
+    - "jenkins"
+    - "central ci"
+    - "polarion"
+    - "dump2polarion"
+    - "documentation"
+    - "trackerbot"
+    - "ostriz"
+    - "sprout"
+    - "gce"
+    - "rhevm"
+    - "rhv"
+    - "vmware"
+    - "virtualcenter"
+    - "osp"
+    - "rhos"
+    - "azure"
+    - "ec2"
+    - "scvmm"
+    - "scvmm2016"
+    - "cm"
+    - "other"
+  testing:
+    - "cfme-5.9"
+    - "cfme-5.8"
+    - "upstream"
+    - "miq-demo"
+    - "on-qa"
+    - "pteam"
+    - "templates"
+    - "other"
+  management:
+    - "meeting"
+    - "bug-work"
+    - "jira"
+    - "other"
+  automation:
+    - "framework"
+    - "auto-test-fix"
+    - "new-test"
+    - "pr-review"
+    - "results-review"
+    - "wrapanapi"
+    - "other"
+  documentation:
+    - "polarion"
+    - "bug-work"
+    - "automation"
+    - "mojo"
+    - "other"
+  training:
+    - "personal"
+    - "other"

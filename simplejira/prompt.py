@@ -4,25 +4,44 @@ import argparse
 
 import cmd2
 import prompter
+import yaml
 
-from .common import editor_ignore_comments, sanitize_worklog_time
+from .common import editor_ignore_comments, sanitize_worklog_time, PkgResource
 from .resource_collections import issue_collection, worklog_collection
-from .wrapper import JiraWrapper
+from .wrapper import JiraWrapper, InvalidLabelError
 
 
-class BasePrompt(cmd2.Cmd):
-    def input(self, *args, **kwargs):
-        """
-        Call prompter.prompt but allow for ctrl+c to cancel and return to base prompt
-        """
-        try:
-            return prompter.prompt(*args, **kwargs)
-        except KeyboardInterrupt:
-            print("<cancelled>\n")
-            return self.emptyline()
+def _selector(list_to_select_from, title):
+    if len(list_to_select_from) == 0:
+        return prompter.prompt(title, default="")
+
+    enumerated = list(enumerate(sorted(list_to_select_from)))
+
+    print(title + "\n")
+    for entry in enumerated:
+        print("  {} / {}".format(entry[0], entry[1]))
+
+    def get_valid_input():
+        input = prompter.prompt("enter selection", default="")
+
+        if input.isdigit():
+            input = int(input)
+            if input < len(enumerated):
+                return enumerated[input][1]
+            else:
+                print("Invalid number")
+                return None
+        else:
+            return input
+
+    print("Enter name, number, type in your own, or leave blank: ")
+    input = None
+    while not input:
+        input = get_valid_input()
+    return input
 
 
-class Prompt(BasePrompt):
+class Prompt(cmd2.Cmd):
     def __init__(self, config_file):
         self.abbrev = True
         cmd2.Cmd.__init__(self, use_ipython=False)
@@ -35,9 +54,13 @@ class Prompt(BasePrompt):
 
         self.issue_collection = None
         self._jw = JiraWrapper(config_file=config_file)
+        self._jw.init()
         self._jira = self._jw.jira
         print("\nWelcome to simplejira!  We hope you have a BLAST.\n")
         print("Type 'help' or '?' to get started.\n")
+
+    def input(self, *args, **kwargs):
+        return prompter.prompt(*args, **kwargs)
 
     # -----------------
     # ls
@@ -80,7 +103,7 @@ class Prompt(BasePrompt):
     # create
     # -----------------
     create_parser = argparse.ArgumentParser()
-    create_parser.add_argument('-e', '--use-editor', default=False, action="store_true",
+    create_parser.add_argument('-e', '--editor', default=False, action="store_true",
                                help="Open a text editor to fill out issue parameters")
     create_parser.add_argument('-s', '--summary', type=str, default=None, help='Issue summary')
     create_parser.add_argument('-d', '--details', type=str, default=None, help='Issue details')
@@ -94,15 +117,47 @@ class Prompt(BasePrompt):
                                help='Estimated time remaining, e.g. "5h30m"')
     @cmd2.with_argparser(create_parser)
     def do_create(self, args):
-        self._jw.create_issue(
-            summary=args.summary,
-            details=args.details,
-            component=args.component,
-            label=args.label,
-            assignee=args.assignee,
-            sprint=args.sprint,
-            timeleft=args.timeleft,
-        )
+        curr_sprint_name = self._jw.current_sprint_name
+        myid = self._jw.userid
+
+        if args.editor:
+            kwargs = yaml.safe_load(
+                editor_ignore_comments(PkgResource.read(PkgResource.ISSUE_TEMPLATE))
+            )
+
+            # Convert 'label' kwarg to 'labels' for JiraWrapper.create_issue()
+            kwargs['labels'] = [kwargs['label']]
+            del kwargs['label']
+            if not kwargs['sprint']:
+                kwargs['sprint'] = curr_sprint_name
+            if not kwargs['assignee']:
+                kwargs['assignee'] = myid
+        else:
+            curr_sprint_name = self._jw.current_sprint_name
+            print("Enter issue details below. Hit Ctrl+C to cancel and return to prompt.")
+            kwargs = {}
+            kwargs['summary'] = self.input("Summary/title:")
+            kwargs['details'] = self.input("Details:", default="")
+            c_l_map = self._jw.component_labels_map
+            kwargs['component'] = _selector(
+                c_l_map.keys() if len(c_l_map) > 0 else [], "Enter component")
+            kwargs['labels'] = [_selector(
+                c_l_map[kwargs['component']] if kwargs['component'] in c_l_map else [],
+                "Enter label")]
+            kwargs['assignee'] = self.input("Assignee:", default=myid)
+            kwargs['sprint'] = self.input("Sprint name, id, or 'backlog':",
+                                          default=curr_sprint_name)
+            kwargs['timeleft'] = self.input("Time left (e.g. 2h30m)", default="")
+
+        try:
+            self._jw.create_issue(**kwargs)
+        except InvalidLabelError as e:
+            print(str(e))
+            confirm = prompter.yesno("Use these labels anyway?")
+            if not confirm:
+                del kwargs['labels']
+                print("Removed labels from the issue, please use 'addlabels' later to add proper labels")
+            self._jw.create_issue(**kwargs)
 
     # -----------------
     # edit
@@ -123,20 +178,27 @@ class Prompt(BasePrompt):
             self._jw.get_todays_worklogs(self.issue_collection.entries)).print_table()
 
 
-class CardEditor(BasePrompt):
+class CardEditor(cmd2.Cmd):
     def __init__(self, jira_wrapper, issue):
         self.abbrev = True
         self.cmd_shortcuts = {
             'do_1': 'do_ls',
             'do_2': 'do_logwork',
             'do_3': 'do_lswork',
-            'do_4': 'do_component',
-            'do_5': 'do_addlabels',
-            'do_6': 'do_rmlabels',
-            'do_7': 'do_status',
-            'do_8': 'do_exit',
+            'do_4': 'do_timeleft',
+            'do_5': 'do_component',
+            'do_6': 'do_addlabel',
+            'do_7': 'do_rmlabels',
+            'do_8': 'do_status',
+            'do_9': 'do_backlog',
+            'do_10': 'do_remove',
+            'do_10': 'do_exit',
         }
-        self.shortcuts.update(self.cmd_shortcuts)
+
+        #self.shortcuts.update(self.cmd_shortcuts)
+        # ^^ this isn't working ... so let's try this:
+        for shortcut, cmd in self.cmd_shortcuts.iteritems():
+            setattr(self, shortcut, getattr(self, cmd))
 
         cmd2.Cmd.__init__(self, use_ipython=False)
 
@@ -147,6 +209,9 @@ class CardEditor(BasePrompt):
         self._jira = self._jw.jira
         self.issue = issue
         self._issue_collection = issue_collection([issue])
+
+    def input(self, *args, **kwargs):
+        return prompter.prompt(*args, **kwargs)
 
     def _print_cmds(self):
         # Print all the commands that can be run against a card
@@ -172,10 +237,7 @@ class CardEditor(BasePrompt):
 
     def cmdloop(self, *args, **kwargs):
         """
-        Print cmd list before entering prompt mode.
-
-        If we enter cmdloop, args weren't passed in from main prompt, so cmd list is printed for
-        helpful reference.
+        Print cmds when prompt starts
         """
         self._print_cmds()
         cmd2.Cmd.cmdloop(self, *args, **kwargs)
@@ -257,15 +319,14 @@ class CardEditor(BasePrompt):
     # component
     # -----------------
     component_parser = argparse.ArgumentParser()
-    component_parser.add_argument('component_name', const=None, type=str, nargs=1)
+    component_parser.add_argument('component_name', const=None, type=str, nargs='?')
     @cmd2.with_argparser(component_parser)
     def do_component(self, args):
         """set component"""
-        name = " ".join(args.component_name)
-        if not name:
-            name = self.input("Enter component name:")
+        if not args.component_name:
+            args.component_name = _selector(self._jw.component_labels_map.keys(), "Enter component")
 
-        self._jw.update_component(issue, name)
+        self._jw.update_component(self.issue, args.component_name)
 
     # -----------------
     # addlabels
@@ -273,11 +334,28 @@ class CardEditor(BasePrompt):
     label_parser = argparse.ArgumentParser()
     label_parser.add_argument('label_names', const=None, type=str, nargs='*')
     @cmd2.with_argparser(label_parser)
-    def do_addlabels(self, args):
+    def do_addlabel(self, args):
         """add label(s)"""
         if not args.label_names:
-            args.label_names = self.input("Enter label names (separated by space):").split(' ')
-        self._jw.update_labels(self.issue, args.label_names)
+            c_l_map = self._jw.component_labels_map
+            issue_component = self._jw.get_component(self.issue).lower()
+            if issue_component:
+                args.label_names = _selector(
+                    c_l_map[issue_component] if issue_component in c_l_map else [],
+                    "Select label").split(' ')
+            else:
+                args.label_names = self.input("Enter label(s):").split(' ')
+        try:
+            self._jw.update_labels(self.issue, args.label_names)
+        except InvalidLabelError as e:
+            print(str(e))
+            confirm = prompter.yesno("Add these labels anyway?")
+            if confirm:
+                try:
+                    self._jw.update_labels(self.issue, args.label_names)
+                except InvalidLabelError:
+                    pass
+
 
     # -----------------
     # rmlabels
@@ -290,10 +368,43 @@ class CardEditor(BasePrompt):
         new_labels = [l for l in self.issue.fields.labels if l not in args.label_names]
         self._jw.update_labels(self.issue, new_labels)
 
+    # -----------------
+    # remove
+    # -----------------
+    def do_remove(self, args):
+        """remove this issue"""
+        self.issue.delete()
+        print("Deleted card, returning to main prompt...")
+        self.do_quit()
+
+    # -----------------
+    # backlog
+    # -----------------
+    def do_backlog(self, args):
+        """move this issue to the backlog"""
+        self._jira.move_to_backlog([self.issue.key])
+
+    # -----------------
+    # timeleft
+    # -----------------
+    """adjust estimated time left"""
+    timeleft_parser = argparse.ArgumentParser()
+    timeleft_parser.add_argument('time_string', const=None, type=str, nargs='*',
+                                 help="Estimated time remaining (e.g. 2h30m)")
+    @cmd2.with_argparser(timeleft_parser)
+    def do_timeleft(self, args):
+        if not args.time_string:
+            args.time_string = self.input("Enter time left (e.g. 2h30m)")
+        else:
+            args.time_string = " ".join(args.time_string)
+        self._jw.edit_remaining_time(self.issue, args.time_string)
+
     '''
     TODO
     def do_edit(self, args):
+        """edit issue (opens editor)"""
         #TODO
+        #Open an editor for an existing issue, edit the YAML, update the issue
         self._issue_collection.updater(
             self.issue, yaml.safe_load(
                 editor_ignore_comments(
@@ -303,6 +414,7 @@ class CardEditor(BasePrompt):
     def do_editwork(self, args):
         """edit full work log (opens editor)"""
         #TODO
+        Open an editor for the worklog entries, edit the YAML, update the worklog
         worklogs = self._jw.get_worklog(self.issue)
         collection = worklog_collection(worklogs)
         print(editor_ignore_comments(collection.to_yaml()))

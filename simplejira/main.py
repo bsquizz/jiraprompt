@@ -4,26 +4,17 @@ import argparse
 import os
 import sys
 
-import pkg_resources
 import prompter
 import yaml
 
-from .common import editor_ignore_comments
+from .common import editor_ignore_comments, PkgResource
 from .prompt import Prompt
 
 CONFIG_FILE = os.path.expanduser('~/.simplejira.yml')
 
 
 def _create_config_file():
-    path = 'resources/config_default.yml'
-    with open(pkg_resources.resource_filename(__name__, path)) as f:
-        default_cfg = yaml.safe_load(f)
-    default_text = (
-        '# Default config for the CFME-QE team.\n'
-        '# username/password is not required unless "basic_auth" is "true"\n\n'
-        '{}'.format(yaml.dump(default_cfg, default_flow_style=False))
-    )
-    new_config = editor_ignore_comments(default_text)
+    new_config = editor_ignore_comments(PkgResource.read(PkgResource.DEFAULT_CONFIG))
 
     filename = prompter.prompt("Enter path for saving config", default=CONFIG_FILE)
     print("Writing config to {}".format(filename))
@@ -56,9 +47,7 @@ def main():
         sys.exit(0)
 
     # print welcome msg
-    path = 'resources/ascii_art.txt'
-    with open(pkg_resources.resource_filename(__name__, path)) as f:
-        print(f.read())
+    print(PkgResource.read(PkgResource.ASCII_ART))
 
     sys.argv = sys.argv[:1] + unknown_args
     Prompt(config_file=filename).cmdloop()

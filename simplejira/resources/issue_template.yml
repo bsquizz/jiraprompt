@@ -1,0 +1,15 @@
+# Enter fields for your new JIRA issue below
+#
+# This file is YAML format, all typical YAML syntax applies
+# All fields are optional except 'summary' -- which is your issue title
+
+summary: ""
+details: ""
+component: ""
+label: ""
+timeleft: "2h30m"
+
+# Leave this blank to assign to yourself
+assignee: ""
+# Leave this blank to use current sprint
+sprint: ""

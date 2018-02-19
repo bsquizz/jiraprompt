@@ -1,0 +1,6 @@
+*.pyc
+.idea
+.ropeproject
+*.egg-info
+src
+
