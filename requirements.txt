@@ -1,12 +1,13 @@
-jira>=1.0.10
-pyyaml
-prompter
-python-editor
-attrs
-prettytable
-cmd2
-iso8601
-six
-pykerberos
-python.dateutil
-requests
+-e git+https://github.com/python-cmd2/cmd2.git#egg=cmd2
+jira>=1.0.11
+pyyaml>=3.12
+prompter>=0.3.10
+python-editor>=1.0.3
+attrs>=17.4.0
+prettytable>=0.7.2
+iso8601>=0.1.12
+six>=1.11.0
+pykerberos>=1.2.1
+python.dateutil>=2.6.1
+requests>=2.18.4
+-e .
