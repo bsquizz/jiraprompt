@@ -21,6 +21,8 @@ setup(
         'pykerberos',
         'python-dateutil',
         'requests',
+        'pbr',
+        'requests-kerberos',
     ],
     scripts=['bin/simplejira']
 )
