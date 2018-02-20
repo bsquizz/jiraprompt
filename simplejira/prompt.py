@@ -81,7 +81,7 @@ class Prompt(cmd2.Cmd):
         if args.sprint == "backlog":
             print("Sorry, 'backlog' is on the TODO list :)")
         elif args.sprint:
-            sprint = self._jw.find_sprint(args.sprint)
+            _, sprint_id = self._jw.find_sprint(args.sprint)
 
         status = None
         if args.status:
@@ -202,8 +202,9 @@ class CardEditor(cmd2.Cmd):
             'do_7': 'do_rmlabels',
             'do_8': 'do_status',
             'do_9': 'do_backlog',
-            'do_10': 'do_remove',
-            'do_10': 'do_exit',
+            'do_10': 'do_pull',
+            'do_11': 'do_remove',
+            'do_11': 'do_exit',
         }
 
         #self.shortcuts.update(self.cmd_shortcuts)
@@ -409,6 +410,13 @@ class CardEditor(cmd2.Cmd):
         else:
             args.time_string = " ".join(args.time_string)
         self._jw.edit_remaining_time(self.issue, args.time_string)
+
+    # -----------------
+    # pull
+    # -----------------
+    def do_pull(self, args):
+        """pull this card into your active sprint"""
+        self._jira.add_issues_to_sprint(self._jw.current_sprint_id, [self.issue.key])
 
     '''
     TODO
