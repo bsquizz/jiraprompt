@@ -167,6 +167,7 @@ class JiraWrapper(object):
         except KeyError:
             return False
 
+    @property
     def verify_ssl(self):
         try:
             return self.config['verify_ssl']
