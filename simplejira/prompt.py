@@ -280,12 +280,16 @@ class CardEditor(cmd2.Cmd):
             comment=args.comment
         )
 
+    def _reload_issue(self):
+        self.issue = self._jira.issue(self.issue.key)
+        return self.issue
+
     # -----------------
     # ls
     # -----------------
     def do_ls(self, args):
         """re-load this issue from server and show it"""
-        self.issue = self._jira.issue(self.issue.key)
+        self._reload_issue()
         issue_collection([self.issue]).print_table(show_totals=False)
 
     # -----------------
@@ -409,6 +413,7 @@ class CardEditor(cmd2.Cmd):
             args.time_string = self.input("Enter time left (e.g. 2h30m)")
         else:
             args.time_string = " ".join(args.time_string)
+        self._reload_issue()  # Reload the issue to get timetracking fields
         self._jw.edit_remaining_time(self.issue, args.time_string)
 
     # -----------------

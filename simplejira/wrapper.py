@@ -6,7 +6,7 @@ import attr
 import yaml
 from jira import JIRA
 
-from .common import iso_time_is_today, sanitize_worklog_time
+from .common import iso_time_is_today, sanitize_worklog_time, friendly_worklog_time
 
 
 class InvalidLabelError(Exception):
@@ -336,7 +336,12 @@ class JiraWrapper(object):
         Keep originalEstimate and only edit remainingEstimate
         We need to pass both of them as not passing originalEstimate zeroes it.
         """
-        f = IssueFields().timetracking(time_string, issue.fields.timeoriginalestimate)
+        try:
+            original = issue.fields.timetracking.originalEstimate
+        except AttributeError:
+            print("Warning: issue had no timetracking field, using timeoriginalestimate field")
+            original = friendly_worklog_time(issue.fields.timeoriginalestimate)
+        f = IssueFields().timetracking(time_string, original) 
         issue.update(**f.kwarg)
 
     @staticmethod
