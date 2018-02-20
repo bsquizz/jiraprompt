@@ -42,6 +42,14 @@ def _selector(list_to_select_from, title):
 
 
 class Prompt(cmd2.Cmd):
+    def _init_jira(self):
+        """
+        Instantiates JiraWrapper and initializes it (loads properties)
+        """
+        self._jw = JiraWrapper(config_file=self.config_file)
+        self._jw.init()
+        self._jira = self._jw.jira
+
     def __init__(self, config_file):
         self.abbrev = True
         cmd2.Cmd.__init__(self, use_ipython=False)
@@ -52,15 +60,23 @@ class Prompt(cmd2.Cmd):
             'do_edit',
         ]
 
+        self.config_file = config_file
         self.issue_collection = None
-        self._jw = JiraWrapper(config_file=config_file)
-        self._jw.init()
-        self._jira = self._jw.jira
+        
+        self._init_jira()
+
         print("\nWelcome to simplejira!  We hope you have a BLAST.\n")
         print("Type 'help' or '?' to get started.\n")
 
     def input(self, *args, **kwargs):
         return prompter.prompt(*args, **kwargs)
+
+    # -----------------
+    # reload
+    # -----------------
+    def do_reload(self, args):
+        """re-initialize JIRA connection"""
+        self._init_jira()
 
     # -----------------
     # ls
