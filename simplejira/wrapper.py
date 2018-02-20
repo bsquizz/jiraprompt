@@ -420,6 +420,21 @@ class JiraWrapper(object):
 
         issue.update(**f.kwarg)
 
+    def find_status_name(self, txt):
+        """
+        Find the server-side status name based on 'txt' input.
+
+        Will search using 'normalized' strings -- e.g. whitepsace removed and lowercase
+
+        This way if txt is 'inprogress' this matches to "In Progress"
+        """
+        txt = self.normalize_name(txt)
+        statuses = self._jira.statuses()
+        for s in statuses:
+            if txt == self.normalize_name(s.name):
+                return s.name
+        return None
+
     def get_avail_statuses(self, issue):
         """
         Find available status transitions for the given issue

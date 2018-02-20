@@ -73,11 +73,22 @@ class Prompt(cmd2.Cmd):
         '-s', '--sprint', type=str, default=None,
         help='Sprint name, sprint number, or "backlog". Default is current sprint.')
     ls_parser.add_argument(
-        '--status', type=str, default=None,
-        help='Status of the card. e.g. --status "In Progress"')
+        '-S', '--status', type=str, default=None,
+        help='Status of the card. e.g. "inprogress" or "In Progress"')
     @cmd2.with_argparser(ls_parser)
     def do_ls(self, args):
-        issues = self._jw.search_issues(args.user, args.sprint, args.status)
+        sprint = None
+        if args.sprint == "backlog":
+            print("Sorry, 'backlog' is on the TODO list :)")
+        elif args.sprint:
+            sprint = self._jw.find_sprint(args.sprint)
+
+        status = None
+        if args.status:
+            status = self._jw.find_status_name(args.status)
+
+
+        issues = self._jw.search_issues(args.user, sprint, status)
         self.issue_collection = issue_collection(issues)
         self.issue_collection.print_table()
 
