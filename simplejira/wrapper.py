@@ -201,6 +201,8 @@ class JiraWrapper(object):
                 kwargs['kerberos_options'] = {'mutual_authentication': "DISABLED"}
 
             kwargs['options'] = {'server': self.jira_url}
+            if 'ca_cert_path' in self.config:
+                kwargs['options']['verify'] = self.config['ca_cert_path']
             if self.verify_ssl is False:
                 print("Warning: SSL certificate verification is disabled!")
                 kwargs['options']['verify'] = False

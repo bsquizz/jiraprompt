@@ -19,6 +19,9 @@ project: "Red Hat CloudForms QE"
 # JIRA server base URL
 url: https://projects.engineering.redhat.com
 
+# Path to certificate authority trust file
+ca_cert_path: "/etc/ssl/certs/ca-bundle.crt"
+
 # Whether or not to validate SSL certs when connecting to JIRA
 verify_ssl: True
 
