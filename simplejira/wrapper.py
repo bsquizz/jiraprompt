@@ -6,6 +6,7 @@ import warnings
 import attr
 import yaml
 from jira import JIRA
+from jira.exceptions import JiraError
 
 from .common import iso_time_is_today, sanitize_worklog_time, friendly_worklog_time
 
@@ -548,7 +549,7 @@ class JiraWrapper(object):
         print("Connecting to JIRA & gathering some info ...")
         try:
             self.userid
-        except jira.exceptions.JIRAError as e:
+        except JIRAError as e:
             if 'CAPTCHA_CHALLENGE' in e.text:
                 print("Your userID currently requires answering a CAPTCHA to login via basic auth")
                 self.input("Open {} in a browser, log in there to answer the CAPTCHA\n"
