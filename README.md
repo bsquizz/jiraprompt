@@ -13,3 +13,7 @@ Make sure you have these dependencies installed (e.x., on fedora):
 Install with:
 
 ` $ pip install -r requirements.txt`
+
+If you have issues with SSL validation, the config supplies a field for the CA trust cert path. You can also comment
+out this line to use your system default. On Fedora, you can `dnf install python-requests` to install a patched version
+of requests that is already pointed toward the Fedora CA cert bundle by default.
