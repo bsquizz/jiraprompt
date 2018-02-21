@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import getpass
 import warnings
 
 import attr
@@ -188,13 +189,17 @@ class JiraWrapper(object):
 
             if 'basic_auth' in auth_cfg and auth_cfg['basic_auth'] is True:
                 print("Using basic authentication")
-                kwargs['basic_auth'] = (auth_cfg['username'], auth_cfg['password'])
+                if 'password' in auth_cfg and auth_cfg['password']:
+                    password = auth_cfg['password']
+                else:
+                    password = getpass.getpass("Enter your JIRA password: ")
+                kwargs['basic_auth'] = (auth_cfg['username'], password)
             else:
                 print("Using kerberos authentication")
                 kwargs['kerberos'] = True
                 kwargs['kerberos_options'] = {'mutual_authentication': "DISABLED"}
 
-            kwargs['options'] = {}
+            kwargs['options'] = {'server': self.jira_url}
             if self.verify_ssl is False:
                 print("Warning: SSL certificate verification is disabled!")
                 kwargs['options']['verify'] = False
@@ -203,7 +208,7 @@ class JiraWrapper(object):
                 from requests.packages.urllib3 import disable_warnings
                 disable_warnings(category=InsecureRequestWarning)
 
-            self._jira = JiraClientOverride(self.jira_url, **kwargs)
+            self._jira = JiraClientOverride(**kwargs)
         return self._jira
 
     @property
@@ -541,6 +546,13 @@ class JiraWrapper(object):
         """Initialize all properties in one shot so it doesn't have to be done later."""
         # Note that these init self.jira too...
         print("Connecting to JIRA & gathering some info ...")
+        try:
+            self.userid
+        except jira.exceptions.JIRAError as e:
+            if 'CAPTCHA_CHALLENGE' in e.text:
+                print("Your userID currently requires answering a CAPTCHA to login via basic auth")
+                self.input("Open {} in a browser, log in there to answer the CAPTCHA\n"
+                           "Hit 'enter' here when done.".format(self.jira_url))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Hide jira greenhopper API warnings
             print("UserID:", self.userid)

@@ -461,17 +461,17 @@ class CardEditor(cmd2.Cmd):
         print(editor_ignore_comments(collection.to_yaml()))
     '''
     assignee_parser = argparse.ArgumentParser()
-    assignee_parser.add_argument('assignee', const=None, type=str,
+    assignee_parser.add_argument('assignee', default=None, type=str, nargs='?',
                                  help="Assign card to someone as assign <username>;"
                                  "username is case insensitive")
     @cmd2.with_argparser(assignee_parser)
     def do_assign(self, args):
         if not args.assignee:
-            args.assignee = self.input("Enter assignee user id:")
+            args.assignee = self.input("Enter assignee user id: [blank to unassign]")
         continue_assignment = False
         if not args.assignee:
-            continue_assignment = prompter.yesno("Leaving assignee blank would unassign the card."
-             "Continue?")
+            continue_assignment = prompter.yesno(
+                    "Leaving assignee blank would unassign the card. Continue?")
         if continue_assignment or args.assignee:
             self._jira.assign_issue(self.issue, args.assignee)
         else:
