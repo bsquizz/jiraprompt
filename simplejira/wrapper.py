@@ -6,7 +6,7 @@ import warnings
 import attr
 import yaml
 from jira import JIRA
-from jira.exceptions import JiraError
+from jira.exceptions import JIRAError
 
 from .common import iso_time_is_today, sanitize_worklog_time, friendly_worklog_time
 
