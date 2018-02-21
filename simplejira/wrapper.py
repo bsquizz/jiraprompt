@@ -263,7 +263,10 @@ class JiraWrapper(object):
         """
         sprints = self.jira.sprints(board_id=self.board_id)
         for s in sprints:
-            if (str(txt).isdigit and str(s.id) == str(txt)) or str(txt).lower() in s.name.lower():
+            txt = str(txt).lower()
+            if txt.isdigit() and txt in [n for n in s.name.split() if n.isdigit()]:
+                return s.name, str(s.id)
+            elif not txt.isdigit() and txt in s.name.lower():
                 return s.name, str(s.id)
 
     def get_current_sprint(self):
@@ -292,7 +295,7 @@ class JiraWrapper(object):
             self.get_current_sprint()
         return self._current_sprint_name
 
-    def search_issues(self, sprint=None, assignee=None, status=None, text=None):
+    def search_issues(self, assignee=None, sprint=None, status=None, text=None):
         """
         Search issues
 
