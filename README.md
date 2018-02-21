@@ -8,7 +8,7 @@ This is a project used by the Red Hat CloudForms QE team to make their life easi
 
 Make sure you have these dependencies installed (e.x., on fedora):
 
-` $ dnf install gcc redhat-rpm-config python2-devel libkrb5-devel which binutils`
+` $ dnf install gcc redhat-rpm-config python2-devel krb5-devel which binutils`
 
 Install with:
 
