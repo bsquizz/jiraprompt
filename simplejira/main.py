@@ -20,6 +20,7 @@ def _create_config_file():
     print("Writing config to {}".format(filename))
     with open(filename, 'w') as f:
         f.write(new_config)
+    os.chmod(filename, 0o600)
     return filename
 
 
