@@ -479,18 +479,21 @@ class CardEditor(cmd2.Cmd):
             return
         
         print("Deleting old worklog entries")
-        for wl in current_worklogs:
-            wl.delete()
+        if current_worklogs:
+            for wl in current_worklogs:
+                wl.delete()
 
         print("Creating new worklog entries")
-        for wl in new_worklogs:
-            self._jira.add_worklog(
-                self.issue.key,
-                timeSpent=sanitize_worklog_time(wl['timeSpent']),
-                comment=wl['comment'],
-                started=ctime_str_to_datetime(wl['started']),
-            )
-    
+        if new_worklogs:
+            for wl in new_worklogs:
+                self._jira.add_worklog(
+                    self.issue.key,
+                    timeSpent=sanitize_worklog_time(wl['timeSpent']),
+                    comment=wl['comment'],
+                    started=ctime_str_to_datetime(wl['started']),
+                )
+        # done
+
     # --------------------
     # assign
     # --------------------
