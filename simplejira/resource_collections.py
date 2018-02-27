@@ -174,7 +174,7 @@ def issue_collection(issue_list):
             issue.key,
             summary,
             f.components[0].name if len(f.components) else "",
-            f.labels[0] if len(f.labels) else "",
+            ", ".join(f.labels) if len(f.labels) else "",
             f.status.name,
             friendly_worklog_time(f.timespent),
             friendly_worklog_time(f.timeestimate),

@@ -378,14 +378,17 @@ class CardEditor(cmd2.Cmd):
                     "Select label").split(' ')
             else:
                 args.label_names = self.input("Enter label(s):").split(' ')
+        current_labels = self.issue.fields.labels
+        # use set to de-dupe but convert back to list for json serialization
+        updated_labels = list(set(current_labels + args.label_names))  
         try:
-            self._jw.update_labels(self.issue, args.label_names)
+            self._jw.update_labels(self.issue, updated_labels)
         except InvalidLabelError as e:
             print(str(e))
             confirm = prompter.yesno("Add these labels anyway?")
             if confirm:
                 try:
-                    self._jw.update_labels(self.issue, args.label_names)
+                    self._jw.update_labels(self.issue, updated_labels)
                 except InvalidLabelError:
                     pass
 
