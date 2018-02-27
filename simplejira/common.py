@@ -4,7 +4,7 @@ from datetime import datetime
 import editor
 import pkg_resources
 import iso8601
-from dateutil import tz
+from dateutil import tz, parser
 
 
 class PkgResource(object):
@@ -92,14 +92,24 @@ def iso_to_datetime(string):
     return utc_datetime.astimezone(tz_local)
 
 
+# For now, instead of using hard-coded datetime formats
+# we'll use %c for datetime->string and for string->datetime
+# just use dateutil's parser
+
+#TIME_FORMAT = '%a %d %b %Y %I:%M:%S %p %Z'
+
+
 def iso_to_ctime_str(string):
     datetime_object = iso_to_datetime(string)
     return datetime_object.strftime('%c')
 
 
+def ctime_str_to_datetime(datetime_string):
+    return parser.parse(datetime_string)
+
+
 def ctime_str_to_iso(datetime_string):
-    datetime_object = datetime.strptime(datetime_string, '%c')
-    return datetime_object.isoformat()
+    return ctime_str_to_datetime(datetime_string).isoformat()
 
 
 def iso_time_is_today(string):

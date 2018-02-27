@@ -59,6 +59,7 @@ class ResourceCollection(object):
         return valid
 
     """ method which takes row data as input and updates the resource server-side """
+    """ Not sure if we'll be using this yet... """
     updater = attr.ib()
 
     """ optional, method which takes all entries and totals certain fields """
@@ -182,6 +183,9 @@ def issue_collection(issue_list):
         return row
 
     def updater(issue, new_data):
+        """
+        Not sure if we'll be using this yet ...
+        """
         '''
         issue.update(
             key=new_data['key'],

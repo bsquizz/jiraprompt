@@ -6,7 +6,9 @@ import cmd2
 import prompter
 import yaml
 
-from .common import editor_ignore_comments, sanitize_worklog_time, PkgResource
+from .common import (
+    editor_ignore_comments, sanitize_worklog_time, PkgResource, ctime_str_to_datetime
+)
 from .resource_collections import issue_collection, worklog_collection
 from .wrapper import JiraWrapper, InvalidLabelError
 
@@ -212,16 +214,17 @@ class CardEditor(cmd2.Cmd):
             'do_1': 'do_ls',
             'do_2': 'do_logwork',
             'do_3': 'do_lswork',
-            'do_4': 'do_timeleft',
-            'do_5': 'do_component',
-            'do_6': 'do_addlabel',
-            'do_7': 'do_rmlabels',
-            'do_8': 'do_status',
-            'do_9': 'do_backlog',
-            'do_10': 'do_pull',
-            'do_11': 'do_remove',
-            'do_12': 'do_assign',
-            'do_13': 'do_exit',
+            'do_4': 'do_editwork',
+            'do_5': 'do_timeleft',
+            'do_6': 'do_component',
+            'do_7': 'do_addlabel',
+            'do_8': 'do_rmlabels',
+            'do_9': 'do_status',
+            'do_10': 'do_backlog',
+            'do_11': 'do_pull',
+            'do_12': 'do_remove',
+            'do_13': 'do_assign',
+            'do_14': 'do_exit',
         }
 
         #self.shortcuts.update(self.cmd_shortcuts)
@@ -443,6 +446,9 @@ class CardEditor(cmd2.Cmd):
         """pull this card into your active sprint"""
         self._jira.add_issues_to_sprint(self._jw.current_sprint_id, [self.issue.key])
 
+    # -----------------
+    # edit
+    # -----------------
     '''
     TODO
     def do_edit(self, args):
@@ -454,15 +460,40 @@ class CardEditor(cmd2.Cmd):
                 editor_ignore_comments(
                     self._issue_collection.to_yaml(
                         self.issue)))[0])
+    '''
 
+    # ------------------
+    # editwork
+    # ------------------
     def do_editwork(self, args):
         """edit full work log (opens editor)"""
-        #TODO
-        Open an editor for the worklog entries, edit the YAML, update the worklog
-        worklogs = self._jw.get_worklog(self.issue)
-        collection = worklog_collection(worklogs)
-        print(editor_ignore_comments(collection.to_yaml()))
-    '''
+        current_worklogs = self._jw.get_worklog(self.issue)
+        collection = worklog_collection(current_worklogs)
+        edited_yaml = editor_ignore_comments(collection.to_yaml())
+        new_worklogs = yaml.safe_load(edited_yaml)
+
+        print("\nNew worklog data will be:\n")
+        print(edited_yaml)
+        if not prompter.yesno("Are you sure you want to update worklogs?"):
+            print("Cancelled")
+            return
+        
+        print("Deleting old worklog entries")
+        for wl in current_worklogs:
+            wl.delete()
+
+        print("Creating new worklog entries")
+        for wl in new_worklogs:
+            self._jira.add_worklog(
+                self.issue.key,
+                timeSpent=sanitize_worklog_time(wl['timeSpent']),
+                comment=wl['comment'],
+                started=ctime_str_to_datetime(wl['started']),
+            )
+    
+    # --------------------
+    # assign
+    # --------------------
     assignee_parser = argparse.ArgumentParser()
     assignee_parser.add_argument('assignee', default=None, type=str, nargs='?',
                                  help="Assign card to someone as assign <username>;"
