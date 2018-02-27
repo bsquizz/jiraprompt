@@ -340,7 +340,7 @@ class JiraWrapper(object):
 
         for issue in issue_list:
             for wl in self.get_worklog(issue):
-                if iso_time_is_today(wl.created) or iso_time_is_today(wl.started):
+                if iso_time_is_today(wl.started):
                     worklogs.append(wl)
         return worklogs
 
