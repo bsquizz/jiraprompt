@@ -557,7 +557,7 @@ class JiraWrapper(object):
         except JIRAError as e:
             if 'CAPTCHA_CHALLENGE' in e.text:
                 print("Your userID currently requires answering a CAPTCHA to login via basic auth")
-                self.input("Open {} in a browser, log in there to answer the CAPTCHA\n"
+                raw_input("Open {} in a browser, log in there to answer the CAPTCHA\n"
                            "Hit 'enter' here when done.".format(self.jira_url))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Hide jira greenhopper API warnings
