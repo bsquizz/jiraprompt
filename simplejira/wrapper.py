@@ -316,7 +316,10 @@ class JiraWrapper(object):
             List of JIRA.Issue resources
         """
         if sprint == "backlog":
-            search_query = 'project = {} AND sprint is EMPTY'.format(self.project_id)
+            search_query = (
+                "project = {} AND issuetype != Epic AND resolution = Unresolved AND "
+                "(Sprint = EMPTY OR Sprint not in (openSprints(), futureSprints()))"
+                .format(self.project_id))
         else:
             sprint = self.current_sprint_id if not sprint else sprint
             search_query = 'sprint = {} '.format(sprint)
