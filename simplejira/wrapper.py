@@ -31,7 +31,7 @@ class JiraClientOverride(JIRA):
         https://stackoverflow.com/questions/21578699/jira-rest-api-and-kerberos-authentication
         """
         super(JiraClientOverride, self)._create_kerberos_session(*args, **kwargs)
-        print("Attempting to authticate with kerberos...")
+        print("Attempting to authenticate with kerberos...")
         r = self._session.get("{}/step-auth-gss".format(self._options['server']))
         if r.status_code == 200:
             print("Authenticated successfully")
@@ -276,6 +276,7 @@ class JiraWrapper(object):
                 return s.name, str(s.id)
             elif not txt.isdigit() and txt in s.name.lower():
                 return s.name, str(s.id)
+        raise ValueError("Unable to find sprint with text: ", str(txt))
 
     def get_current_sprint(self):
         active_sprints = (
@@ -413,6 +414,7 @@ class JiraWrapper(object):
         for c in components:
             if (str(txt).isdigit and str(c.id) == str(txt)) or str(txt).lower() in c.name.lower():
                 return c.name, c.id
+        raise ValueError("Unable to find component with text: ", str(txt))
 
     def _check_comp_labels(self, component, labels):
         if not component or not labels:
