@@ -319,6 +319,7 @@ class JiraWrapper(object):
         if sprint == "backlog":
             search_query = (
                 "project = {} AND issuetype != Epic AND resolution = Unresolved AND "
+                "status != Done AND "
                 "(Sprint = EMPTY OR Sprint not in (openSprints(), futureSprints()))"
                 .format(self.project_id))
         else:
