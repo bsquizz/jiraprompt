@@ -242,7 +242,10 @@ class CardEditor(cmd2.Cmd):
         cmd2.Cmd.__init__(self, use_ipython=False)
 
         self.prompt = "(card {}) ".format(issue.key)
-        self.exclude_from_help += ["do_quit"]
+        self.exclude_from_help += [
+            'do_load', 'do_py', 'do_pyscript', 'do_shell', 'do_set',
+            'do_shortcuts', 'do_history', 'do_edit',
+        ]
 
         self._jw = jira_wrapper
         self._jira = self._jw.jira
