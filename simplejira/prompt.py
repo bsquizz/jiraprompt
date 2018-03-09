@@ -195,9 +195,12 @@ class Prompt(cmd2.Cmd):
     # -----------------
     # edit
     # -----------------
+    '''
+    TODO
     def do_edit(self, args):
         """edit card details (opens editor)"""
         print(editor_ignore_comments(self.issue_collection.to_yaml()))
+    '''
 
     # -----------------
     # todayswork
@@ -433,13 +436,13 @@ class CardEditor(cmd2.Cmd):
     # -----------------
     # timeleft
     # -----------------
-    """adjust estimated time left"""
     timeleft_parser = argparse.ArgumentParser()
     timeleft_parser.add_argument('time_string', const=None, type=str, nargs='*',
                                  help="Estimated time remaining (e.g. 2h30m)")
 
     @cmd2.with_argparser(timeleft_parser)
     def do_timeleft(self, args):
+        """adjust estimated time left"""
         if not args.time_string:
             args.time_string = self.input("Enter time left (e.g. 2h30m)")
         else:
@@ -507,11 +510,12 @@ class CardEditor(cmd2.Cmd):
     # --------------------
     assignee_parser = argparse.ArgumentParser()
     assignee_parser.add_argument('assignee', default=None, type=str, nargs='?',
-                                 help="Assign card to someone as assign <username>;"
-                                 "username is case insensitive")
+                                 help="username to assign card to, "
+                                 "case insensitive")
 
     @cmd2.with_argparser(assignee_parser)
     def do_assign(self, args):
+        """assign a card to yourself or someone else"""
         if not args.assignee:
             args.assignee = self.input("Enter assignee user id: [blank to unassign]")
         continue_assignment = False
