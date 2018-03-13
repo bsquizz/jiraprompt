@@ -8,3 +8,5 @@ This file is used to track project TODO's
       into the needed params/fields
 * the client needs to intelligently refresh so you can leave it open a long time -- e.g. refresh auth, and detect changes if you run it overnight like the active sprint changing -- need to find the max reasonable time between running a refresh and possible keep a background 'refresher' thread going in the JiraWrapper class -- right now this can manually be done using the 'reload' cmd in the main prompt
 * write a real README
+* add shortened commands
+* view yesterday's work
