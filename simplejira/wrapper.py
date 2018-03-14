@@ -8,7 +8,8 @@ import yaml
 from jira import JIRA
 from jira.exceptions import JIRAError
 
-from .common import iso_time_is_today, sanitize_worklog_time, friendly_worklog_time
+from .common import (
+    iso_time_is_today, sanitize_worklog_time, friendly_worklog_time, iso_time_is_yesterday)
 
 
 class InvalidLabelError(Exception):
@@ -346,6 +347,15 @@ class JiraWrapper(object):
         for issue in issue_list:
             for wl in self.get_worklog(issue):
                 if iso_time_is_today(wl.started):
+                    worklogs.append(wl)
+        return worklogs
+
+    def get_yesterdays_worklogs(self, issue_list):
+        worklogs = []
+
+        for issue in issue_list:
+            for wl in self.get_worklog(issue):
+                if iso_time_is_yesterday(wl.started):
                     worklogs.append(wl)
         return worklogs
 

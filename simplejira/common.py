@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import editor
 import iso8601
@@ -106,3 +106,8 @@ def ctime_str_to_iso(datetime_string):
 def iso_time_is_today(string):
     datetime_object = iso_to_datetime(string)
     return datetime.today().date() == datetime_object.date()
+
+
+def iso_time_is_yesterday(string):
+    datetime_object = iso_to_datetime(string)
+    return (datetime.today().date() - timedelta(1)) == datetime_object.date()

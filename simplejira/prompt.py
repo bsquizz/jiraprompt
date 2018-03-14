@@ -288,8 +288,8 @@ class MainPrompt(BasePrompt):
     # -----------------
     def do_yesterdayswork(self, args):
         """show all work log entries logged yesterday for a generated issue table"""
-        pass
-
+        worklog_collection(
+            self._jw.get_yesterdays_worklogs(self.issue_collection.entries)).print_table()
 
 class CardPrompt(BasePrompt):
     """
