@@ -141,7 +141,7 @@ class MainPrompt(BasePrompt):
         print("\nWelcome to simplejira!  We hope you have a BLAST.\n")
         print("You are in the main prompt; commands you can use here:\n")
         self.print_cmds()
-        print("\nUse 'help' or '?' for more details\n")
+        print("\nUse 'quit' to exit.  Use 'help' or '?' for more details\n")
 
     def requires_table(func):
         """
@@ -337,7 +337,7 @@ class CardPrompt(BasePrompt):
 
         self.print_cmds()
 
-        print("\nUse 'quit' to get back to main prompt\n")
+        print("\nUse 'quit' to exit back to main prompt.  Use 'help' or '?' for more details\n")
         cmd2.Cmd.cmdloop(self, *args, **kwargs)
 
     def do_exit(self, args):
