@@ -6,6 +6,18 @@ import iso8601
 from dateutil import tz, parser
 
 
+def editor_preserve_comments(default_text):
+    """
+    Open pyeditor and preserves comments. Does some encoding stuff.
+    """
+    if not isinstance(default_text, bytes):
+        default_text = default_text.encode("utf-8")
+    edited_text = editor.edit(contents=default_text)
+    if not isinstance(edited_text, str):
+        edited_text = edited_text.decode("utf-8")
+    return edited_text
+
+
 def editor_ignore_comments(default_text):
     """
     Open pyeditor but ignore lines starting with "#" when text is returned.
@@ -19,7 +31,7 @@ def editor_ignore_comments(default_text):
     if not isinstance(edited_text, str):
         edited_text = edited_text.decode("utf-8")
     lines = edited_text.split('\n')
-    return "\n".join(line for line in lines if not line.startswith("#"))
+    return "\n".join(line for line in lines if not line.lstrip().startswith("#"))
 
 
 def sanitize_worklog_time(s):
