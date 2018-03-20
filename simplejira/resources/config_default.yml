@@ -28,6 +28,9 @@ verify_ssl: True
 # Whether or not to check that components have valid labels
 label_check: True
 
+# Whether to always check (and sync if needed) your config's components_labels_map with those in default config
+sync_to_defaults: true
+
 # Map of valid labels for each components
 components_labels_map:
   infrastructure:
