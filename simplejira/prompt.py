@@ -273,6 +273,7 @@ class MainPrompt(BasePrompt):
                 del kwargs['labels']
                 print("Removed labels from the issue, please use 'addlabels' later to add proper "
                       "labels")
+            kwargs['force_labels'] = True
             self._jw.create_issue(**kwargs)
 
     # -----------------

@@ -516,7 +516,7 @@ class JiraWrapper(object):
 
     def create_issue(self, summary, details=None, component=None,
                      labels=None, assignee=None, sprint=None, timeleft=None,
-                     issuetype="Story"):
+                     issuetype="Story", force_labels=False):
         """
         Create an issue (by default, a Story) in the agile sprint.
 
@@ -529,6 +529,7 @@ class JiraWrapper(object):
           sprint (str): sprint name, sprint number, or 'backlog'. Default is current sprint
           timeleft (str): estimated time remaining (e.g. 2h30m)
           issueype (str): issue type, default is "Story", you likely won't change this.
+          force_labels (boolean): don't check if labels/components are valid
 
         Returns:
           The newly created JIRA.Issue resource
@@ -542,7 +543,8 @@ class JiraWrapper(object):
         else:
             _, sprint_id = self.find_sprint(sprint)
 
-        self._check_comp_labels(component, labels)
+        if not force_labels:
+            self._check_comp_labels(component, labels)
 
         f = IssueFields()
         comp_name_server_side, _ = self.find_component(component)
