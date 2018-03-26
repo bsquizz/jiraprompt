@@ -24,7 +24,7 @@ def _compare_version(pypi_version):
         my_version = StrictVersion(local_version)
     except ValueError:
         print(
-            'Local version \'{}\' seems to be a dev version'
+            'Version \'{}\' seems to be a dev version, assuming up-to-date'
             .format(local_version)
         )
         my_version = StrictVersion('999.999.999')
