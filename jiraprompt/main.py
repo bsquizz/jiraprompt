@@ -6,10 +6,12 @@ import sys
 
 from pathlib2 import Path
 import prompter
+import yaml
 
 from .common import editor_preserve_comments
 from .prompt import MainPrompt
 from .res import get_default_config, get_default_labels, get_ascii_art
+from .utils.update_check import check_pypi
 
 
 DEFAULT_CONFIG_FILE = 'config.yaml'
@@ -77,6 +79,12 @@ def main():
 
     # print welcome msg
     print(get_ascii_art().decode('utf8'))
+
+    # check for updates if enabled
+    with config_path.open() as f:
+        cfg = yaml.safe_load(f)
+    if cfg.get('check_for_updates', True):
+        check_pypi()
 
     sys.argv = sys.argv[:1] + unknown_args
 

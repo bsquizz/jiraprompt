@@ -10,6 +10,9 @@ auth:
   # for a more secure option
   password: null
 
+# Set to false to disable checking pypi for new releases
+check_for_updates: true
+
 # Name or ID of agile board
 board: "CloudForms QE Sprints"
 
@@ -27,4 +30,3 @@ verify_ssl: True
 
 # Whether or not to check that components have valid labels (using your labels file)
 label_check: True
-
