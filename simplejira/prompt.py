@@ -17,7 +17,7 @@ from .resource_collections import issue_collection, worklog_collection
 from .wrapper import JiraWrapper, InvalidLabelError
 
 
-def _selector(list_to_select_from, title):
+def _selector(list_to_select_from, title, default=''):
     if len(list_to_select_from) == 0:
         return prompter.prompt(title, default="")
 
@@ -27,8 +27,8 @@ def _selector(list_to_select_from, title):
     for entry in enumerated:
         print("  {} / {}".format(entry[0], entry[1]))
 
-    def get_valid_input():
-        input = prompter.prompt("enter selection", default="")
+    def get_valid_input(default):
+        input = prompter.prompt("enter selection", default=default)
 
         if input.isdigit():
             input = int(input)
@@ -43,7 +43,7 @@ def _selector(list_to_select_from, title):
     print("Enter name, number, type in your own, or leave blank: ")
     input = None
     while not input:
-        input = get_valid_input()
+        input = get_valid_input(default)
     return input
 
 
@@ -228,6 +228,8 @@ class MainPrompt(BasePrompt):
                                help='Sprint name, sprint number, or "blacklog". Default=current')
     create_parser.add_argument('-T', '--timeleft', type=str, default=None,
                                help='Estimated time remaining, e.g. "5h30m"')
+    create_parser.add_argument('-t', '--issue-type', type=str, default='Task',
+                               help='Issue type, one of Task, Story, Bug, Epic. Default=Task')
 
     @cmd2.with_argparser(create_parser)
     def do_new(self, args):
@@ -247,6 +249,8 @@ class MainPrompt(BasePrompt):
                 kwargs['sprint'] = curr_sprint_name
             if not kwargs['assignee']:
                 kwargs['assignee'] = myid
+            if not kwargs['issuetype']:
+                kwargs['issuetype'] = 'Task'
         else:
             curr_sprint_name = self._jw.current_sprint_name
             print("Enter issue details below. Hit Ctrl+C to cancel and return to prompt.")
@@ -263,6 +267,8 @@ class MainPrompt(BasePrompt):
             kwargs['sprint'] = self.input("Sprint name, id, or 'backlog':",
                                           default=curr_sprint_name)
             kwargs['timeleft'] = self.input("Time left (e.g. 2h30m)", default="")
+            kwargs['issuetype'] = _selector(['Task', 'Story', 'Bug', 'Epic'], 'Enter issue type',
+                                            default='Task')
 
         try:
             self._jw.create_issue(**kwargs)
@@ -293,6 +299,7 @@ class MainPrompt(BasePrompt):
         """show all work log entries logged yesterday for a generated issue table"""
         worklog_collection(
             self._jw.get_yesterdays_worklogs(self.issue_collection.entries)).print_table()
+
 
 class CardPrompt(BasePrompt):
     """
