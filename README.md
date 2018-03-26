@@ -31,17 +31,22 @@ If you want to use Python 3 instead of Python 2, you'll need to install `python3
 
 ## Installing
 
-To install jiraprompt and the rest of its dependencies, you'll need to set up a virtual environment
-and install the dependencies from `requirements.txt`.
+To install jiraprompt and the rest of its dependencies, it is recommended you set up a virtual environment
 
 ```
 $ virtualenv env
+```
+
+The package is available on pypi, so you can simply run:
+
+```
+$ env/bin/pip install jiraprompt
+```
+
+Alternatively, you can install from source with:
+
+```
 $ env/bin/pip install -r requirements.txt
-```
-
-Lastly, install jiraprompt itself.
-
-```
 $ env/bin/python setup.py install
 ```
 
