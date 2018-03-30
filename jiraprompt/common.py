@@ -94,17 +94,15 @@ def iso_to_datetime(string):
     utc_datetime = utc_datetime.replace(tzinfo=tz_utc)
     return utc_datetime.astimezone(tz_local)
 
-
-# For now, instead of using hard-coded datetime formats
-# we'll use %c for datetime->string and for string->datetime
-# just use dateutil's parser
-
-# TIME_FORMAT = '%a %d %b %Y %I:%M:%S %p %Z'
+# Using a time format that explicitly specifies %Z since in some
+# environments the time zone was not being printed even
+# if the datetime object had 'tzinfo'
+TIME_FORMAT = '%a %x %X %Z'
 
 
 def iso_to_ctime_str(string):
     datetime_object = iso_to_datetime(string)
-    return datetime_object.strftime('%c')
+    return datetime_object.strftime(TIME_FORMAT)
 
 
 def ctime_str_to_datetime(datetime_string):
