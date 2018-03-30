@@ -36,7 +36,7 @@ def _compare_version(pypi_version):
             ' '
             'Upgrade with:'
             '    pip install --upgrade jiraprompt'
-            ' '
+            ' '.format(my_version, pypi_version)
         )
     else:
         print('Up-to-date!')
