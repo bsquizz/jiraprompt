@@ -73,7 +73,7 @@ class BasePrompt(cmd2.Cmd, object):
         """
         for shortcut, cmd in self.cmd_shortcuts.items():
             setattr(self, shortcut, getattr(self, cmd))
-            self.exclude_from_help.append(shortcut)
+            self.hidden_commands.append(shortcut.lstrip('do_'))
 
     def print_cmds(self):
         """
@@ -101,9 +101,9 @@ class BasePrompt(cmd2.Cmd, object):
     def __init__(self):
         cmd2.Cmd.__init__(self, use_ipython=False)
         self.allow_cli_args = True
-        self.exclude_from_help += [
-            'do_load', 'do_py', 'do_pyscript', 'do_shell', 'do_set',
-            'do_shortcuts', 'do_history', 'do_edit',
+        self.hidden_commands += [
+            'load', 'py', 'pyscript', 'shell', 'set',
+            'shortcuts', 'history', 'edit', 'alias', 'unalias',
         ]
         self.set_shortcuts()
 

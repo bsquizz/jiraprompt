@@ -13,3 +13,7 @@
 0.0.4
 =====
 * bug fix when creating new card with sprint='backlog'
+
+0.0.5
+=====
+* compatibility fixes for cmd2 0.8.3

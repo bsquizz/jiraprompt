@@ -31,6 +31,7 @@ setup(
         'requests-kerberos',
         'undecorated',
         'pathlib2',
+        'wcwidth',
     ],
     scripts=['bin/jiraprompt'],
     classifiers=[
