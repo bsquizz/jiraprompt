@@ -539,7 +539,7 @@ class JiraWrapper(object):
 
         if not sprint:
             sprint_id = self.current_sprint_id
-        else:
+        elif sprint != 'backlog':
             _, sprint_id = self.find_sprint(sprint)
 
         if not force_labels:
