@@ -9,3 +9,7 @@
 0.0.3
 =====
 * bug fix for update check not displaying versions properly
+
+0.0.4
+=====
+* bug fix when creating new card with sprint='backlog'
