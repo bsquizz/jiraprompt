@@ -10,7 +10,7 @@ import pkg_resources
 import requests
 
 
-PYPI_URL = 'http://pypi.python.org/pypi/jiraprompt/json'
+PYPI_URL = 'https://pypi.python.org/pypi/jiraprompt/json'
 
 
 def _compare_version(pypi_version):
