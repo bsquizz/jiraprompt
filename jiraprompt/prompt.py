@@ -73,21 +73,23 @@ class BasePrompt(cmd2.Cmd, object):
         """
         for shortcut, cmd in self.cmd_shortcuts.items():
             setattr(self, shortcut, getattr(self, cmd))
-            self.hidden_commands.append(shortcut.lstrip('do_'))
+            self.hidden_commands.append(shortcut.replace('do_', ''))
 
     def print_cmds(self):
         """
         Print commands and their shortcuts along with a shortened description.
         """
         for shortcut, full_cmd_name in self.cmd_shortcuts.items():
-            shortcut_name = shortcut.lstrip("do_")
+            shortcut_name = shortcut.replace('do_', '')
 
             # Get the description for this cmd, and 'undecorate' it to get the original docstring
             # without the argparse stuff
             docstring = undecorated(getattr(self, full_cmd_name)).__doc__
 
             print(
-                "  {:>5} / {:<20} {}".format(shortcut_name, full_cmd_name.lstrip("do_"), docstring)
+                "  {:>5} / {:<20} {}".format(
+                    shortcut_name, full_cmd_name.replace('do_', ''), docstring
+                )
             )
 
     def do_quit(self, args):
@@ -319,6 +321,7 @@ class CardPrompt(BasePrompt):
         od['do_al'] = 'do_addlabels'
         od['do_rl'] = 'do_rmlabels'
         od['do_s'] = 'do_status'
+        od['do_d'] = 'do_done'
         od['do_b'] = 'do_backlog'
         od['do_p'] = 'do_pull'
         od['do_r'] = 'do_remove'
@@ -355,6 +358,11 @@ class CardPrompt(BasePrompt):
     def do_exit(self, args):
         """return to main prompt"""
         return self.do_quit(args)
+
+    def do_done(self, args):
+        """shortcut to change card's timeleft to '0' and status to 'done'."""
+        self.do_timeleft('0')
+        return self.do_status('done')
 
     # -----------------
     # logwork
