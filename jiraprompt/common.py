@@ -94,6 +94,7 @@ def iso_to_datetime(string):
     utc_datetime = utc_datetime.replace(tzinfo=tz_utc)
     return utc_datetime.astimezone(tz_local)
 
+
 # Using a time format that explicitly specifies %Z since in some
 # environments the time zone was not being printed even
 # if the datetime object had 'tzinfo'

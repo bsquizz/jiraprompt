@@ -5,7 +5,6 @@ Contains utils such as update checker
 from __future__ import print_function
 
 from distutils.version import StrictVersion
-import json
 import pkg_resources
 import requests
 
@@ -56,7 +55,7 @@ def check_pypi():
         print('Error response from pypi: ', e.errno, e.message)
     except ValueError:
         print('Response was not valid json, giving up.')
-    
+
     try:
         pypi_version = pkg_data['info']['version']
     except KeyError:

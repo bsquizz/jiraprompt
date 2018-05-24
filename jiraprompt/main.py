@@ -24,7 +24,7 @@ def _get_config_path():
         config_home = Path(xdg_config_home)
     else:
         config_home = Path.home().joinpath('.config')
-        
+
     return config_home.joinpath('jiraprompt')
 
 

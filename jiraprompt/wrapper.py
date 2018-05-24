@@ -7,6 +7,7 @@ import attr
 import yaml
 from jira import JIRA
 from jira.exceptions import JIRAError
+from jira.resilientsession import ResilientSession
 
 from .common import (
     iso_time_is_today, sanitize_worklog_time, friendly_worklog_time, iso_time_is_yesterday)
@@ -22,7 +23,66 @@ class InvalidLabelError(Exception):
         return "Label '{}' is not valid for component '{}'".format(self.label, self.component)
 
 
+class ResilientSessionWithAuthCheck(ResilientSession):
+    """
+    Extends the python-jira ResilientSession to reset our session's cookies when auth epxires.
+    """
+    def __init__(self, resilient_session_obj, jira_client_args, jira_client_kwargs):
+        """
+        Constructor.
+
+        Copy our attrs to be equivalent to the ResilientSession that was already
+        created. We'll end up with an identical instance of ResilientSession, but the
+        __recoverable() method defined below will be overriden.
+
+        We store the args/kwargs that were used to instantiate the JIRA client so that we can
+        create a new client instance with the same properties in the get_new_cookies() method.
+        """
+        self.__dict__ = resilient_session_obj.__dict__.copy()
+        self._jira_client_args = jira_client_args
+        self._jira_client_kwargs = jira_client_kwargs
+
+    def get_new_cookies(self):
+        """
+        Re-init a JIRA client and grab new cookies from it.
+
+        Uses the same args/kwargs as the original JIRA client that this session was created from
+
+        There is a lot of logic in the JIRA class __init__ method to handle creating the
+        authenticated session, so it's easier to just init a new instance and pull the cookies
+        from the new object into our current session.
+        """
+        new_client = JiraClientOverride(*self._jira_client_args, **self._jira_client_kwargs)
+        # Make an API request to trigger an auth attempt in the new client
+        new_client.myself()
+        self.cookies = new_client._session.cookies  # noqa
+
+    def _ResilientSession__recoverable(self, response, *args, **kwargs):
+        """
+        Override the ResilientSession __recoverable() method.
+
+        Override the retry logic to get new cookies if a 401 is hit.
+
+        The python-jira ResilientSession retries the http request when a 401 is hit, but does
+        not try to refresh the auth session.
+
+        Yeah, overriding a name mangled method is ugly. Perhaps I'll push this upstream soon :)
+        """
+        if hasattr(response, 'status_code') and response.status_code == 401:
+            print("Session expired, attempting to refresh...")
+            self.get_new_cookies()
+        return super(ResilientSessionWithAuthCheck, self)._ResilientSession__recoverable(
+            response, *args, **kwargs)
+
+
 class JiraClientOverride(JIRA):
+    def __init__(self, *args, **kwargs):
+        """
+        Overrides the client session with our own version of ResilientSession.
+        """
+        super(JiraClientOverride, self).__init__(*args, **kwargs)
+        self._session = ResilientSessionWithAuthCheck(self._session, args, kwargs)
+
     def _create_kerberos_session(self, *args, **kwargs):
         """
         Little hack to get auth cookies from JIRA when using kerberos, otherwise
@@ -119,7 +179,7 @@ class IssueFields(object):
         if not any(kwargs.values()):
             raise ValueError("project needs at least 1 of: [name, key, id] defined")
 
-        d = {'project': {}}    
+        d = {'project': {}}
 
         for key, value in kwargs.items():
             if value:
@@ -127,6 +187,7 @@ class IssueFields(object):
 
         self.fields.update(d)
         return self
+
 
 @attr.s
 class JiraWrapper(object):
@@ -326,6 +387,8 @@ class JiraWrapper(object):
             sprint = self.current_sprint_id if not sprint else sprint
             search_query = 'sprint = {} '.format(sprint)
         if not assignee:
+            # Make sure we are still logged in, otherwise an empty list may be returned.
+            self.jira.myself()
             assignee = "currentUser()"
         search_query += ' AND assignee = {}'.format(assignee)
         if status:
@@ -338,6 +401,8 @@ class JiraWrapper(object):
         return self.search_issues()
 
     def get_worklog(self, issue):
+        # Make sure we are still logged in, otherwise an empty list may be returned.
+        self.jira.myself()
         return self.jira.worklogs(issue.key)
 
     def get_todays_worklogs(self, issue_list):
@@ -554,9 +619,9 @@ class JiraWrapper(object):
             .project(id=self.project_id) \
             .issuetype(issuetype) \
             .timetracking(timeleft, timeleft)
-        
+
         new_issue = self.jira.create_issue(**f.kwarg)
-        
+
         if assignee:
             self.jira.assign_issue(new_issue.key, assignee)
 
@@ -575,7 +640,7 @@ class JiraWrapper(object):
             if 'CAPTCHA_CHALLENGE' in e.text:
                 print("Your userID currently requires answering a CAPTCHA to login via basic auth")
                 raw_input("Open {} in a browser, log in there to answer the CAPTCHA\n"
-                           "Hit 'enter' here when done.".format(self.jira_url))
+                          "Hit 'enter' here when done.".format(self.jira_url))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Hide jira greenhopper API warnings
             print("UserID:", self.userid)
