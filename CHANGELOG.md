@@ -17,3 +17,17 @@
 0.0.5
 =====
 * compatibility fixes for cmd2 0.8.3
+
+0.0.6
+=====
+* use https for pypi update check
+
+0.1.0
+=====
+* add 'done' card command
+
+0.2.0
+=====
+* add auth retry mechanisms
+
+
