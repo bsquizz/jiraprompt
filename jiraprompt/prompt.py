@@ -14,6 +14,7 @@ from .res import get_issue_template
 from .resource_collections import issue_collection
 from .resource_collections import worklog_collection
 from .wrapper import InvalidLabelError
+from .wrapper import JiraClient
 from .wrapper import JiraWrapper
 
 
@@ -136,9 +137,9 @@ class MainPrompt(BasePrompt):
         """
         Instantiates JiraWrapper and initializes it (loads properties)
         """
-        self._jw = JiraWrapper(config=self.config)
-        self._jw.init()
-        self._jira = self._jw.jira
+        self._client = JiraClient(self.config)
+        self._client.connect()
+        self._jw = JiraWrapper(self.config, self._client)
 
     def __init__(self, config):
         super().__init__()
