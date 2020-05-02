@@ -136,16 +136,15 @@ class MainPrompt(BasePrompt):
         """
         Instantiates JiraWrapper and initializes it (loads properties)
         """
-        self._jw = JiraWrapper(config_file=self.config_file, labels_file=self.labels_file)
+        self._jw = JiraWrapper(config=self.config)
         self._jw.init()
         self._jira = self._jw.jira
 
-    def __init__(self, config_file, labels_file):
+    def __init__(self, config):
         super().__init__()
         self.prompt = "(jiraprompt) "
 
-        self.config_file = config_file
-        self.labels_file = labels_file
+        self.config = config
         self.issue_collection = None
 
         self._init_jira()

@@ -180,11 +180,8 @@ class JiraWrapper:
     Provides utils for storing config and interacting with python-jira
     """
 
-    config_file = attr.ib()
-    labels_file = attr.ib()
+    config = attr.ib()
 
-    _config = attr.ib(default=attr.Factory(dict))
-    _component_labels_map = attr.ib(default=attr.Factory(dict))
     _jira = attr.ib(default=None)
     _current_sprint_id = attr.ib(default=0)
     _current_sprint_name = attr.ib(type=str, default=None)
@@ -192,65 +189,31 @@ class JiraWrapper:
     _project_id = attr.ib(default=0)
     _userid = attr.ib(type=str, default=None)
 
-    def __attrs_post_init__(self):
-        """
-        After object instantiation, load config files
-        """
-        with open(self.config_file, "r") as f:
-            self._config = yaml.safe_load(f)
-        if self.labels_file:
-            with open(self.labels_file, "r") as f:
-                self._component_labels_map = yaml.safe_load(f)
-
-    @property
-    def jira_url(self):
-        """
-        Server URL being used for JIRA.
-        """
-        return self._config["url"]
-
-    @property
-    def label_check(self):
-        try:
-            return self._config["label_check"]
-        except KeyError:
-            return False
-
-    @property
-    def verify_ssl(self):
-        try:
-            return self._config["verify_ssl"]
-        except KeyError:
-            return True
-
     @property
     def jira(self):
         """
         Creates the JiraClient session
         """
+        config = self.config
+
         if not self._jira:
-            print("Connecting to jira at", self.jira_url)
+            print("Connecting to jira at", self.config.url)
             kwargs = {}
-            cfg = self._config
-            auth_cfg = cfg["auth"]
             kwargs["validate"] = False
 
-            if "basic_auth" in auth_cfg and auth_cfg["basic_auth"] is True:
+            if config.basic_auth:
                 print("Using basic authentication")
-                if "password" in auth_cfg and auth_cfg["password"]:
-                    password = auth_cfg["password"]
-                else:
-                    password = getpass.getpass("Enter your JIRA password: ")
-                kwargs["basic_auth"] = (auth_cfg["username"], password)
+                password = config.password or getpass.getpass("Enter your JIRA password: ")
+                kwargs["basic_auth"] = (config.username, password)
             else:
                 print("Using kerberos authentication")
                 kwargs["kerberos"] = True
                 kwargs["kerberos_options"] = {"mutual_authentication": "DISABLED"}
 
-            kwargs["options"] = {"server": self.jira_url}
-            if "ca_cert_path" in self._config:
-                kwargs["options"]["verify"] = self._config["ca_cert_path"]
-            if self.verify_ssl is False:
+            kwargs["options"] = {"server": self.config.url}
+            if config.ca_cert_path:
+                kwargs["options"]["verify"] = config.ca_cert_path
+            if self.config.verify_ssl is False:
                 print("Warning: SSL certificate verification is disabled!")
                 kwargs["options"]["verify"] = False
                 # Disable ssl validation warnings, we gave one warning already ...
@@ -265,11 +228,7 @@ class JiraWrapper:
     @property
     def board_id(self):
         if not self._board_id:
-            try:
-                cfgboard = str(self._config["board"]).lower()
-            except KeyError:
-                raise KeyError("config has no 'board' defined!")
-
+            cfgboard = str(self.config.board).lower()
             boards = self.jira.boards()
 
             for b in boards:
@@ -278,16 +237,13 @@ class JiraWrapper:
                     break
 
             if not self._board_id:
-                raise ValueError("Unable to find board '{}'".format(self._config["board"]))
+                raise ValueError(f"Unable to find board '{self.config.board}'")
         return self._board_id
 
     @property
     def project_id(self):
         if not self._project_id:
-            try:
-                cfgproject = str(self._config["project"]).lower()
-            except KeyError:
-                raise KeyError("config has no 'project' defined!")
+            cfgproject = str(self.config.project).lower()
 
             projects = self.jira.projects()
 
@@ -297,7 +253,7 @@ class JiraWrapper:
                     break
 
             if not self._project_id:
-                raise ValueError("Unable to find project '{}'".format(self._config["project"]))
+                raise ValueError(f"Unable to find project '{self.config.project}'")
         return self._project_id
 
     @property
@@ -453,16 +409,6 @@ class JiraWrapper:
         """
         return txt.replace(" ", "").lower()
 
-    @property
-    def component_labels_map(self):
-        try:
-            lowercase_data = {
-                k.lower(): [l.lower() for l in v] for k, v in self._component_labels_map.items()
-            }
-        except KeyError:
-            lowercase_data = {}
-        return lowercase_data
-
     def find_component(self, txt):
         """
         Find component whose name or id matches 'txt', case insensitive
@@ -483,17 +429,6 @@ class JiraWrapper:
             if str(txt).lower() in c.name.lower():
                 return c.name, c.id
         raise ValueError("Unable to find component with text: ", str(txt))
-
-    def _check_comp_labels(self, component, labels):
-        if not component or not labels:
-            return
-        if self.label_check:
-            comp_lower = component.lower()
-            labels_lower = [l.lower() for l in labels]
-            if comp_lower in self.component_labels_map:
-                for l in labels_lower:
-                    if l not in self.component_labels_map[comp_lower]:
-                        raise InvalidLabelError(component, l)
 
     def update_component(self, issue, component_name):
         server_side_name, _ = self.find_component(component_name)
@@ -641,7 +576,7 @@ class JiraWrapper:
                 print("Your userID currently requires answering a CAPTCHA to login via basic auth")
                 input(
                     "Open {} in a browser, log in there to answer the CAPTCHA\n"
-                    "Hit 'enter' here when done.".format(self.jira_url)
+                    "Hit 'enter' here when done.".format(self.config.url)
                 )
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Hide jira greenhopper API warnings
