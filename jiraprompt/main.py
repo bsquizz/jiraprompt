@@ -1,10 +1,7 @@
 import argparse
-import os
 import sys
-from pathlib import Path
 
 import prompter
-import yaml
 
 from .config import Config
 from .prompt import MainPrompt

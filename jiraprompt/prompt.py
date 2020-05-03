@@ -7,14 +7,13 @@ import prompter
 import yaml
 from undecorated import undecorated
 
+from .client import JiraClient
 from .common import ctime_str_to_datetime
 from .common import editor_ignore_comments
 from .common import sanitize_worklog_time
 from .res import get_issue_template
 from .resource_collections import issue_collection
 from .resource_collections import worklog_collection
-from .wrapper import InvalidLabelError
-from .wrapper import JiraClient
 from .wrapper import JiraWrapper
 
 
