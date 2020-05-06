@@ -92,42 +92,46 @@ class JiraWrapper:
     config = attr.ib()
     client = attr.ib(type=JiraClient)
 
-    _current_sprint_id = attr.ib(default=0)
-    _current_sprint_name = attr.ib(type=str, default=None)
-    _board_id = attr.ib(default=0)
-    _project_id = attr.ib(default=0)
-    _userid = attr.ib(type=str, default=None)
+    current_sprint_id = attr.ib(default=0)
+    current_sprint_name = attr.ib(type=str, default=None)
+    board_id = attr.ib(default=0)
+    project_id = attr.ib(default=0)
 
-    @property
-    def board_id(self):
-        if not self._board_id:
-            cfgboard = str(self.config.board).lower()
-            boards = self.client.boards()
+    @cached_property
+    def id_for_board(self):
+        if not self.config.boards:
+            raise ValueError("No boards found in config")
 
-            for b in boards:
-                if b.name.lower() == cfgboard or str(b.id) == cfgboard:
-                    self._board_id = str(b.id)
+        config_boards = [str(board).lower() for board in self.config.boards]
+        server_boards = self.client.boards()
+        _id_for_board = {}
+
+        for idx, cb in enumerate(config_boards):
+            for sb in server_boards:
+                if sb.name.lower() == cb or str(sb.id) == cb:
+                    _id_for_board[self.config.boards[idx]] = sb.id
                     break
+            else:
+                raise ValueError(f"Unable to find board '{cb}' on server")
 
-            if not self._board_id:
-                raise ValueError(f"Unable to find board '{self.config.board}'")
-        return self._board_id
+        return _id_for_board
 
-    @property
-    def project_id(self):
-        if not self._project_id:
-            cfgproject = str(self.config.project).lower()
+    @cached_property
+    def id_for_project(self):
+        if not self.client.projects:
+            raise ValueError("No projects found in config")
 
-            projects = self.client.projects()
+        config_projects = [str(project).lower() for project in self.config.projects]
+        server_projects = self.projects()
+        _id_for_project = {}
 
-            for p in projects:
-                if any(x == cfgproject for x in [p.key.lower(), p.name.lower(), str(p.id)]):
-                    self._project_id = str(p.id)
+        for idx, cp in enumerate(config_projects):
+            for sp in server_projects:
+                if any(x == cp for x in [sp.key.lower(), sp.name.lower(), str(sp.id)]):
+                    _id_for_project[self.config.projects[idx]] = sp.id
                     break
-
-            if not self._project_id:
-                raise ValueError(f"Unable to find project '{self.config.project}'")
-        return self._project_id
+            else:
+                raise ValueError(f"Unable to find project '{cp}' on server")
 
     def find_sprint(self, txt):
         """
