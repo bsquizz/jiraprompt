@@ -102,7 +102,7 @@ class BasePrompt(cmd2.Cmd):
         return prompter.prompt(*args, **kwargs)
 
     def __init__(self):
-        cmd2.Cmd.__init__(self, use_ipython=False)
+        cmd2.Cmd.__init__(self, use_ipython=True)
         self.allow_cli_args = True
         self.hidden_commands += [
             "load",
@@ -139,6 +139,7 @@ class MainPrompt(BasePrompt):
         self._client = JiraClient(self.config)
         self._client.connect()
         self._jw = JiraWrapper(self.config, self._client)
+        self._jw.init()
 
     def __init__(self, config):
         super().__init__()
@@ -540,7 +541,7 @@ class CardPrompt(BasePrompt):
         """remove label(s)"""
         if not args.label_names:
             args.label_names = self.input("Enter label names (separated by space):").split(" ")
-        new_labels = [l for l in self.issue.fields.labels if l not in args.label_names]
+        new_labels = [label for label in self.issue.fields.labels if label not in args.label_names]
         self._jw.update_labels(self.issue, new_labels)
 
     # -----------------

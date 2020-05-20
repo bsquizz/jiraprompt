@@ -12,11 +12,14 @@ password: null
 # Set to false to disable checking pypi for new releases
 check_for_updates: true
 
-# Name or ID of agile board
-board: "CloudForms QE Sprints"
+# Name or ID of agile boards you want to work with
+boards:
+- "Advisor"
 
-# Name, key, or ID of project
-project: "Red Hat CloudForms QE"
+# Name, key, or ID of projects you want to work with
+projects:
+- "IQE"
+- "RHCLOUD"
 
 # JIRA server base URL
 url: https://projects.engineering.redhat.com

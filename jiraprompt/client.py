@@ -1,5 +1,4 @@
 import getpass
-import warnings
 import webbrowser
 
 import prompter
@@ -77,20 +76,18 @@ class JiraClient(JIRA):
         return self.myself()["key"]
 
     def _handle_init(self, **kwargs):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")  # Hide jira greenhopper API warnings
-            try:
+        try:
+            super().__init__(**kwargs)
+        except JIRAError as e:
+            if "CAPTCHA_CHALLENGE" in e.text:
+                print("Too many failed login attempts, answering a CAPTCHA is required")
+                if prompter.yesno(f"Open a browser to log in to '{self.config.url}'?"):
+                    url = f"{self.config.url}/login.jsp?nosso"
+                    webbrowser.open_new(url)
+                input("Hit ENTER here once you have logged in via a web browser")
                 super().__init__(**kwargs)
-            except JIRAError as e:
-                if "CAPTCHA_CHALLENGE" in e.text:
-                    print("Too many failed login attempts, answering a CAPTCHA is required")
-                    if prompter.yesno(f"Open a browser to log in to '{self.config.url}'?"):
-                        url = f"{self.config.url}/login.jsp?nosso"
-                        webbrowser.open_new(url)
-                    input("Hit ENTER here once you have logged in via a web browser")
-                    super().__init__(**kwargs)
-                else:
-                    raise
+            else:
+                raise
 
     def connect(self):
         config = self.config

@@ -1,4 +1,7 @@
+import warnings
+
 import attr
+from cached_property import cached_property
 
 from .client import JiraClient
 from .common import friendly_worklog_time
@@ -97,42 +100,6 @@ class JiraWrapper:
     board_id = attr.ib(default=0)
     project_id = attr.ib(default=0)
 
-    @cached_property
-    def id_for_board(self):
-        if not self.config.boards:
-            raise ValueError("No boards found in config")
-
-        config_boards = [str(board).lower() for board in self.config.boards]
-        server_boards = self.client.boards()
-        _id_for_board = {}
-
-        for idx, cb in enumerate(config_boards):
-            for sb in server_boards:
-                if sb.name.lower() == cb or str(sb.id) == cb:
-                    _id_for_board[self.config.boards[idx]] = sb.id
-                    break
-            else:
-                raise ValueError(f"Unable to find board '{cb}' on server")
-
-        return _id_for_board
-
-    @cached_property
-    def id_for_project(self):
-        if not self.client.projects:
-            raise ValueError("No projects found in config")
-
-        config_projects = [str(project).lower() for project in self.config.projects]
-        server_projects = self.projects()
-        _id_for_project = {}
-
-        for idx, cp in enumerate(config_projects):
-            for sp in server_projects:
-                if any(x == cp for x in [sp.key.lower(), sp.name.lower(), str(sp.id)]):
-                    _id_for_project[self.config.projects[idx]] = sp.id
-                    break
-            else:
-                raise ValueError(f"Unable to find project '{cp}' on server")
-
     def find_sprint(self, txt):
         """
         Return sprint ID whose name or ID contains "txt", case insensitive.
@@ -152,15 +119,13 @@ class JiraWrapper:
                 return s.name, str(s.id)
         raise ValueError("Unable to find sprint with text: ", str(txt))
 
-    def get_current_sprint(self):
+    def get_current_sprint(self, board_id):
         active_sprints = (
             sprint
-            for sprint in self.client.sprints(board_id=self.board_id, state="active")
+            for sprint in self.client.sprints(board_id=board_id, state="active")
             if sprint.state.lower() == "active"
         )
         current_sprint = sorted(active_sprints, key=lambda sprint: sprint.id)[-1]
-        self._current_sprint_id = str(current_sprint.id)
-        self._current_sprint_name = current_sprint.name
         return current_sprint
 
     @property
@@ -177,6 +142,55 @@ class JiraWrapper:
         if not self._current_sprint_name:
             self.get_current_sprint()
         return self._current_sprint_name
+
+    @cached_property
+    def info_for_board(self):
+        if not self.config.boards:
+            raise ValueError("No boards found in config")
+
+        config_boards = [str(board).lower() for board in self.config.boards]
+        server_boards = self.client.boards()
+        _info_for_board = {}
+
+        for idx, cb in enumerate(config_boards):
+            for sb in server_boards:
+                if sb.name.lower() == cb or str(sb.id) == cb:
+                    current_sprint = self.get_current_sprint(sb.id)
+                    _info_for_board[self.config.boards[idx]] = {
+                        "name": sb.name,
+                        "id": sb.id,
+                        "filter_query": sb.raw.get("filter", {}).get("query"),
+                        "current_sprint_name": current_sprint.name,
+                        "current_sprint_id": current_sprint.id,
+                    }
+                    break
+            else:
+                raise ValueError(f"Unable to find board '{cb}' on server")
+
+        return _info_for_board
+
+    @cached_property
+    def info_for_project(self):
+        if not self.config.projects:
+            raise ValueError("No projects found in config")
+
+        config_projects = [str(project).lower() for project in self.config.projects]
+        server_projects = self.client.projects()
+        _info_for_project = {}
+
+        for idx, cp in enumerate(config_projects):
+            for sp in server_projects:
+                if any(x == cp for x in [sp.key.lower(), sp.name.lower(), str(sp.id)]):
+                    _info_for_project[self.config.projects[idx]] = {
+                        "id": sp.id,
+                        "key": sp.key,
+                        "name": sp.name,
+                    }
+                    break
+            else:
+                raise ValueError(f"Unable to find project '{cp}' on server")
+
+        return _info_for_project
 
     def search_issues(self, assignee=None, sprint=None, status=None, text=None):
         """
@@ -438,7 +452,9 @@ class JiraWrapper:
     def init(self):
         """Initialize all properties in one shot so it doesn't have to be done later."""
         # Note that these init self.client too...
-        print("Project ID:", self.project_id)
-        print("Board ID:", self.board_id)
-        print("Current sprint name:", self.current_sprint_name)
-        print("Current sprint ID:", self.current_sprint_id)
+        from pprint import pprint
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # Hide jira greenhopper API warnings
+            pprint(self.info_for_board)
+            pprint(self.info_for_project)
